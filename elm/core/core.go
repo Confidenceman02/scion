@@ -18,7 +18,7 @@ type Ok[T any, E any] struct {
 
 type Err[T any, E any] struct {
 	_Result[T, E]
-	Value T
+	Value E
 }
 
 func ResultWith[T any, E any, R any](
