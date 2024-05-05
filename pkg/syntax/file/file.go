@@ -1,8 +1,8 @@
 package file
 
 import (
-	"scion/elm/syntax/module"
-	"scion/elm/syntax/node"
+	"scion/pkg/syntax/module"
+	"scion/pkg/syntax/node"
 )
 
 type File struct {
