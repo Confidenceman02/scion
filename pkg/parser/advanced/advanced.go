@@ -5,7 +5,7 @@ import (
 	"scion/pkg/parser/internal"
 )
 
-type Parser[T any, P any] struct {
+type Parser[Value any, Problem any] struct {
 	Parse
 }
 

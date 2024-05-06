@@ -2,6 +2,7 @@ package parser
 
 import (
 	"scion/pkg/elm"
+	"scion/pkg/elm/list"
 	"scion/pkg/parser/advanced"
 )
 
@@ -70,13 +71,13 @@ func Run[T any](p Parser[T], source string) elm.Result[T, []DeadEnd] {
 			return elm.Ok[T, []DeadEnd]{Value: o.Value}
 		},
 		func(e *elm.Err[T, []advanced.DeadEnd[Problem]]) elm.Result[T, []DeadEnd] {
-			var deadends = []DeadEnd{}
-			for _, de := range e.Value {
-				deadends = append(deadends, DeadEnd{de.Row, de.Col, de.Problem})
-
-			}
+			deadends := list.Map[advanced.DeadEnd[Problem], DeadEnd](problemToDeadend, e.Value)
 			return elm.Err[T, []DeadEnd]{Value: deadends}
 		})
+}
+
+func problemToDeadend(ade advanced.DeadEnd[Problem]) DeadEnd {
+	return DeadEnd{Row: ade.Row, Col: ade.Col, Problem: ade.Problem}
 }
 
 // Parsers
