@@ -12,17 +12,17 @@ func TestTokenParser(t *testing.T) {
 	t.Run("Token parser Ok", func(t *testing.T) {
 		token := Token("hello")
 
-		SUT := Run[string](token, "hello world")
+		SUT := Run(token, "hello world")
 
-		asserts.Equal(elm.Ok[string, []DeadEnd]{Value: "hello"}, SUT)
+		asserts.Equal(elm.Ok[struct{}, []DeadEnd]{Value: struct{}{}}, SUT)
 	})
 
 	t.Run("Token parser Err", func(t *testing.T) {
 		token := Token("foo")
-		SUT := Run[string](token, "hello world")
+		SUT := Run(token, "hello world")
 
 		de := []DeadEnd{DeadEnd{Row: 1, Col: 1, Problem: Expecting{value: "foo"}}}
 
-		asserts.Equal(elm.Err[string, []DeadEnd]{Value: de}, SUT)
+		asserts.Equal(elm.Err[struct{}, []DeadEnd]{Value: de}, SUT)
 	})
 }

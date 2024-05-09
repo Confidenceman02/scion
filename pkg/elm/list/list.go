@@ -11,3 +11,7 @@ func Map[A any, B any](f mapper[A, B], xs []A) []B {
 	}
 	return xs1
 }
+
+func Cons[A any](el A, xs []A) []A {
+	return append([]A{el}, xs...)
+}

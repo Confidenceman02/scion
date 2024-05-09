@@ -81,9 +81,9 @@ func problemToDeadend(ade advanced.DeadEnd[elm.Never, Problem]) DeadEnd {
 }
 
 // Parsers
-func Token(s string) Parser[string] {
+func Token(s string) Parser[struct{}] {
 	token := toToken(s)
-	return Parser[string]{token.Token()}
+	return Parser[struct{}]{token.Token()}
 }
 
 func toToken(s string) advanced.Token[elm.Never, Problem] {
