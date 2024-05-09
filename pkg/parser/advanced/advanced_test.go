@@ -10,19 +10,19 @@ func TestTokenParser(t *testing.T) {
 	asserts := assert.New(t)
 
 	t.Run("Token parser Ok", func(t *testing.T) {
-		token := Token[string]{Value: "hello", Expecting: "Expecting hello"}
+		token := Token[elm.Never, string]{Value: "hello", Expecting: "Expecting hello"}
 
-		SUT := Run[string](token.Token(), "hello world")
+		SUT := Run[elm.Never, string](token.Token(), "hello world")
 
-		asserts.Equal(elm.Ok[string, []DeadEnd[string]]{Value: "hello"}, SUT)
+		asserts.Equal(elm.Ok[string, []DeadEnd[elm.Never, string]]{Value: "hello"}, SUT)
 	})
 
 	t.Run("Token parser Err", func(t *testing.T) {
-		token := Token[string]{Value: "foo", Expecting: "Expecting foo"}
-		SUT := Run[string](token.Token(), "hello world")
+		token := Token[elm.Never, string]{Value: "foo", Expecting: "Expecting foo"}
+		SUT := Run[elm.Never, string](token.Token(), "hello world")
 
-		de := []DeadEnd[string]{DeadEnd[string]{Row: 1, Col: 1, Problem: "Expecting foo"}}
+		de := []DeadEnd[elm.Never, string]{DeadEnd[elm.Never, string]{Row: 1, Col: 1, Problem: "Expecting foo", ContextStack: nil}}
 
-		asserts.Equal(elm.Err[string, []DeadEnd[string]]{Value: de}, SUT)
+		asserts.Equal(elm.Err[string, []DeadEnd[elm.Never, string]]{Value: de}, SUT)
 	})
 }

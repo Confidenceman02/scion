@@ -7,7 +7,7 @@ import (
 )
 
 type Parser[T any] struct {
-	advanced.Parser[T, Problem]
+	advanced.Parser[elm.Never, T, Problem]
 }
 
 type DeadEnd struct {
@@ -67,16 +67,16 @@ func Run[T any](p Parser[T], source string) elm.Result[T, []DeadEnd] {
 
 	return elm.ResultWith(
 		result,
-		func(o *elm.Ok[T, []advanced.DeadEnd[Problem]]) elm.Result[T, []DeadEnd] {
+		func(o *elm.Ok[T, []advanced.DeadEnd[elm.Never, Problem]]) elm.Result[T, []DeadEnd] {
 			return elm.Ok[T, []DeadEnd]{Value: o.Value}
 		},
-		func(e *elm.Err[T, []advanced.DeadEnd[Problem]]) elm.Result[T, []DeadEnd] {
-			deadends := list.Map[advanced.DeadEnd[Problem], DeadEnd](problemToDeadend, e.Value)
+		func(e *elm.Err[T, []advanced.DeadEnd[elm.Never, Problem]]) elm.Result[T, []DeadEnd] {
+			deadends := list.Map[advanced.DeadEnd[elm.Never, Problem], DeadEnd](problemToDeadend, e.Value)
 			return elm.Err[T, []DeadEnd]{Value: deadends}
 		})
 }
 
-func problemToDeadend(ade advanced.DeadEnd[Problem]) DeadEnd {
+func problemToDeadend(ade advanced.DeadEnd[elm.Never, Problem]) DeadEnd {
 	return DeadEnd{Row: ade.Row, Col: ade.Col, Problem: ade.Problem}
 }
 
@@ -86,6 +86,6 @@ func Token(s string) Parser[string] {
 	return Parser[string]{token.Token()}
 }
 
-func toToken(s string) advanced.Token[Problem] {
-	return advanced.Token[Problem]{Value: s, Expecting: Expecting{value: s}}
+func toToken(s string) advanced.Token[elm.Never, Problem] {
+	return advanced.Token[elm.Never, Problem]{Value: s, Expecting: Expecting{value: s}}
 }

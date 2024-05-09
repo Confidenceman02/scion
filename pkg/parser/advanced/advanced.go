@@ -5,11 +5,11 @@ import (
 	"scion/pkg/parser/internal"
 )
 
-type Parser[Value any, Problem any] struct {
+type Parser[C any, Value any, Problem any] struct {
 	Parse
 }
 
-type Token[X any] struct {
+type Token[C any, X any] struct {
 	Value     string
 	Expecting X
 }
@@ -27,9 +27,9 @@ type Good[T any] struct {
 	value T
 }
 
-type Bad[X any] struct {
+type Bad[C any, X any] struct {
 	_PStep
-	problem DeadEnd[X]
+	problem DeadEnd[C, X]
 }
 
 type _PStep struct{}
@@ -42,10 +42,17 @@ type State struct {
 }
 
 // TODO add a context
-type DeadEnd[P any] struct {
+type DeadEnd[C any, P any] struct {
+	Row          int
+	Col          int
+	Problem      P
+	ContextStack []ContextStack[C]
+}
+
+type ContextStack[C any] struct {
 	Row     int
 	Col     int
-	Problem P
+	Context C
 }
 
 // Constructors
@@ -64,14 +71,14 @@ func (ps _PStep) pstep() _PStep {
 
 /* Parse exactly the given string, without any regard to what comes next.
  */
-func (t *Token[X]) Token() Parser[string, X] {
-	return Parser[string, X]{
+func (t *Token[C, X]) Token() Parser[C, string, X] {
+	return Parser[C, string, X]{
 		Parse: func(s State) PStep {
 			nOffset, nRow, nCol := internal.IsSubString(t.Value, s.offset, s.row, s.col, s.src)
 			nState := NewState(s.src, nOffset, nRow, nCol)
 
 			if nOffset == -1 {
-				return Bad[X]{problem: DeadEnd[X]{Row: s.row, Col: s.col, Problem: t.Expecting}}
+				return Bad[C, X]{problem: DeadEnd[C, X]{Row: s.row, Col: s.col, Problem: t.Expecting}}
 			} else {
 				return NewGood(nState, t.Value)
 			}
@@ -82,30 +89,30 @@ func (t *Token[X]) Token() Parser[string, X] {
 /*
 A parser on it's own doesn't do anything, we need to run it.
 */
-func Run[T any, P any](p Parser[T, P], source string) elm.Result[T, []DeadEnd[P]] {
+func Run[C any, T any, P any](p Parser[C, T, P], source string) elm.Result[T, []DeadEnd[C, P]] {
 	init := p.Parse(NewState(source, 0, 1, 1))
 
 	return PStepWith(
 		init,
-		func(g *Good[T]) elm.Result[T, []DeadEnd[P]] { return elm.Ok[T, []DeadEnd[P]]{Value: g.value} },
-		func(b *Bad[P]) elm.Result[T, []DeadEnd[P]] {
-			de := []DeadEnd[P]{b.problem}
-			return elm.Err[T, []DeadEnd[P]]{Value: de}
+		func(g *Good[T]) elm.Result[T, []DeadEnd[C, P]] { return elm.Ok[T, []DeadEnd[C, P]]{Value: g.value} },
+		func(b *Bad[C, P]) elm.Result[T, []DeadEnd[C, P]] {
+			de := []DeadEnd[C, P]{b.problem}
+			return elm.Err[T, []DeadEnd[C, P]]{Value: de}
 		},
 	)
 }
 
 // Matcher
-func PStepWith[R any, V any, X any](
+func PStepWith[C any, R any, V any, X any](
 	pstep PStep,
 	good func(*Good[V]) R,
-	bad func(*Bad[X]) R,
+	bad func(*Bad[C, X]) R,
 ) R {
 	switch d := pstep.(type) {
 	case Good[V]:
 		return good(&d)
 
-	case Bad[X]:
+	case Bad[C, X]:
 		return bad(&d)
 	}
 	panic("unreachable")
