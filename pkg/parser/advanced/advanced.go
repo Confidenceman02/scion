@@ -6,7 +6,7 @@ import (
 )
 
 type Parser[C any, Value any, Problem any] struct {
-	Parse
+	Parse[C]
 }
 
 type Token[C any, X any] struct {
@@ -14,16 +14,16 @@ type Token[C any, X any] struct {
 	Expecting X
 }
 
-type Parse func(s State) PStep
+type Parse[C any] func(s State[C]) PStep
 
 type PStep interface {
 	pstep() _PStep
 }
 
 // Variants
-type Good[T any] struct {
+type Good[C any, T any] struct {
 	_PStep
-	State
+	State[C]
 	value T
 }
 
@@ -34,34 +34,39 @@ type Bad[C any, X any] struct {
 
 type _PStep struct{}
 
-type State struct {
-	src    string
-	offset int
-	row    int
-	col    int
+// TODO add context
+type State[C any] struct {
+	src     string
+	offset  int
+	row     int
+	col     int
+	context []Located[C]
 }
 
-// TODO add a context
 type DeadEnd[C any, P any] struct {
 	Row          int
 	Col          int
 	Problem      P
-	ContextStack []ContextStack[C]
+	ContextStack []struct {
+		Row     int
+		Col     int
+		Context C
+	}
 }
 
-type ContextStack[C any] struct {
+type Located[C any] struct {
 	Row     int
 	Col     int
 	Context C
 }
 
 // Constructors
-func NewGood[T any](s State, v T) PStep {
-	return Good[T]{State: s, value: v}
+func NewGood[C any, T any](s State[C], v T) PStep {
+	return Good[C, T]{State: s, value: v}
 }
 
-func NewState(src string, offset int, row int, col int) State {
-	return State{src: src, offset: offset, row: row, col: col}
+func NewState[C any](src string, offset int, row int, col int) State[C] {
+	return State[C]{src: src, offset: offset, row: row, col: col}
 }
 
 // Methods
@@ -73,9 +78,9 @@ func (ps _PStep) pstep() _PStep {
  */
 func (t *Token[C, X]) Token() Parser[C, string, X] {
 	return Parser[C, string, X]{
-		Parse: func(s State) PStep {
+		Parse: func(s State[C]) PStep {
 			nOffset, nRow, nCol := internal.IsSubString(t.Value, s.offset, s.row, s.col, s.src)
-			nState := NewState(s.src, nOffset, nRow, nCol)
+			nState := NewState[C](s.src, nOffset, nRow, nCol)
 
 			if nOffset == -1 {
 				return Bad[C, X]{problem: DeadEnd[C, X]{Row: s.row, Col: s.col, Problem: t.Expecting}}
@@ -90,11 +95,11 @@ func (t *Token[C, X]) Token() Parser[C, string, X] {
 A parser on it's own doesn't do anything, we need to run it.
 */
 func Run[C any, T any, P any](p Parser[C, T, P], source string) elm.Result[T, []DeadEnd[C, P]] {
-	init := p.Parse(NewState(source, 0, 1, 1))
+	init := p.Parse(NewState[C](source, 0, 1, 1))
 
 	return PStepWith(
 		init,
-		func(g *Good[T]) elm.Result[T, []DeadEnd[C, P]] { return elm.Ok[T, []DeadEnd[C, P]]{Value: g.value} },
+		func(g *Good[C, T]) elm.Result[T, []DeadEnd[C, P]] { return elm.Ok[T, []DeadEnd[C, P]]{Value: g.value} },
 		func(b *Bad[C, P]) elm.Result[T, []DeadEnd[C, P]] {
 			de := []DeadEnd[C, P]{b.problem}
 			return elm.Err[T, []DeadEnd[C, P]]{Value: de}
@@ -105,11 +110,11 @@ func Run[C any, T any, P any](p Parser[C, T, P], source string) elm.Result[T, []
 // Matcher
 func PStepWith[C any, R any, V any, X any](
 	pstep PStep,
-	good func(*Good[V]) R,
+	good func(*Good[C, V]) R,
 	bad func(*Bad[C, X]) R,
 ) R {
 	switch d := pstep.(type) {
-	case Good[V]:
+	case Good[C, V]:
 		return good(&d)
 
 	case Bad[C, X]:
