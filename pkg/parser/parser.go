@@ -84,7 +84,6 @@ func problemToDeadend(ade advanced.DeadEnd[Problem]) DeadEnd {
 func Token(s string) Parser[string] {
 	token := toToken(s)
 	return Parser[string]{token.Token()}
-
 }
 
 func toToken(s string) advanced.Token[Problem] {
