@@ -2,11 +2,12 @@ package advanced
 
 import (
 	"scion/pkg/elm"
+	"scion/pkg/elm/char"
 	"scion/pkg/elm/list"
 	"scion/pkg/parser/internal"
 )
 
-type Parser[C any, Value any, Problem any] struct {
+type Parser[C any, Probelm, Value any] struct {
 	Parse[C, Value]
 }
 
@@ -78,8 +79,8 @@ will get this extra context information.
 
 That way you can say things like, “I was expecting an equals sign in the `view` definition.” Context!
 */
-func InContext[C any, V any, P any](c C, p Parser[C, V, P]) Parser[C, V, P] {
-	return Parser[C, V, P]{
+func InContext[C any, V any, P any](c C, p Parser[C, P, V]) Parser[C, P, V] {
+	return Parser[C, P, V]{
 		Parse: func(s0 State[C]) PStep[V] {
 			newContext := changeContext[C](list.Cons(Located[C]{Row: s0.row, Col: s0.col, Context: c}, s0.context), s0)
 			parsed := p.Parse(newContext)
@@ -112,8 +113,39 @@ func fromState[C any, P any](s State[C], p P) DeadEnd[C, P] {
 
 }
 
-func Symbol[C any, X any](t Token[C, X]) Parser[C, struct{}, X] {
+func Symbol[C any, X any](t Token[C, X]) Parser[C, X, struct{}] {
 	return t.Token()
+}
+
+/*
+Just like parser.Keyword but you provide a 'Token' to clearly indicate your
+custom type of problems:
+
+	func letParser() Parser[Context Problem struct{}] {
+	  return Keyword(Token{"let", ExpectingLet})
+	}
+
+Note that this would fail to chomp `letter` because of the subsequent
+characters. Use `Token` if you do not want that last letter check.
+*/
+func Keyword[C any, X any](t Token[C, X]) Parser[C, X, struct{}] {
+	return Parser[C, X, struct{}]{
+		Parse: func(s State[C]) PStep[struct{}] {
+			newOffset, newRow, newCol := isSubString(t.Value, s.offset, s.row, s.col, s.src)
+			if newOffset == -1 || 0 <= isSubChar(func(c int32) bool { return char.IsAlphaNum(c) || c == '_' }, newOffset, s.src) {
+				return NewBad[C, struct{}, X](fromState[C, X](s, t.Expecting))
+
+			} else {
+				return NewGood(State[C]{s.src, newOffset, newRow, newCol, s.context}, struct{}{})
+			}
+		},
+	}
+}
+func isSubString(ss string, offset int, row int, col int, src string) (int, int, int) {
+	return internal.IsSubString(ss, offset, row, col, src)
+}
+func isSubChar(predicate func(c int32) bool, offset int, s string) int {
+	return internal.IsSubChar(predicate, offset, s)
 }
 
 // Methods
@@ -123,8 +155,8 @@ func (ps _PStep[V]) pstep() _PStep[V] {
 
 /* Parse exactly the given string, without any regard to what comes next.
  */
-func (t *Token[C, X]) Token() Parser[C, struct{}, X] {
-	return Parser[C, struct{}, X]{
+func (t *Token[C, X]) Token() Parser[C, X, struct{}] {
+	return Parser[C, X, struct{}]{
 		Parse: func(s State[C]) PStep[struct{}] {
 			nOffset, nRow, nCol := internal.IsSubString(t.Value, s.offset, s.row, s.col, s.src)
 			nState := NewState[C](s.src, nOffset, nRow, nCol)
@@ -141,15 +173,15 @@ func (t *Token[C, X]) Token() Parser[C, struct{}, X] {
 /*
 A parser on it's own doesn't do anything, we need to run it.
 */
-func Run[C any, T any, P any](p Parser[C, T, P], source string) elm.Result[T, []DeadEnd[C, P]] {
+func Run[C any, V any, P any](p Parser[C, P, V], source string) elm.Result[V, []DeadEnd[C, P]] {
 	init := p.Parse(NewState[C](source, 0, 1, 1))
 
 	return PStepWith(
 		init,
-		func(g *Good[C, T]) elm.Result[T, []DeadEnd[C, P]] { return elm.Ok[T, []DeadEnd[C, P]]{Value: g.value} },
-		func(b *Bad[C, T, P]) elm.Result[T, []DeadEnd[C, P]] {
+		func(g *Good[C, V]) elm.Result[V, []DeadEnd[C, P]] { return elm.Ok[V, []DeadEnd[C, P]]{Value: g.value} },
+		func(b *Bad[C, V, P]) elm.Result[V, []DeadEnd[C, P]] {
 			de := []DeadEnd[C, P]{b.problem}
-			return elm.Err[T, []DeadEnd[C, P]]{Value: de}
+			return elm.Err[V, []DeadEnd[C, P]]{Value: de}
 		},
 	)
 }

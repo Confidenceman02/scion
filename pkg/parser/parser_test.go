@@ -47,3 +47,23 @@ func TestSymbolParser(t *testing.T) {
 		asserts.Equal(elm.Err[struct{}, []DeadEnd]{Value: de}, SUT)
 	})
 }
+func TestKeywordParser(t *testing.T) {
+	asserts := assert.New(t)
+
+	t.Run("Keyword Ok", func(t *testing.T) {
+		keyword := Keyword("let")
+
+		SUT := Run(keyword, "let")
+
+		asserts.Equal(elm.Ok[struct{}, []DeadEnd]{Value: struct{}{}}, SUT)
+	})
+
+	t.Run("Keyword Err", func(t *testing.T) {
+		keyword := Keyword("let")
+
+		SUT := Run(keyword, "letters")
+		de := []DeadEnd{DeadEnd{Row: 1, Col: 1, Problem: ExpectingKeyword{value: "let"}}}
+
+		asserts.Equal(elm.Err[struct{}, []DeadEnd]{Value: de}, SUT)
+	})
+}

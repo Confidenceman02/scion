@@ -46,6 +46,31 @@ func TestSymbolParser(t *testing.T) {
 		SUT := Run(symbol, "..)")
 
 		de := []DeadEnd[elm.Never, string]{DeadEnd[elm.Never, string]{Row: 1, Col: 1, Problem: "Expecting (", ContextStack: nil}}
+
+		asserts.Equal(elm.Err[struct{}, []DeadEnd[elm.Never, string]]{Value: de}, SUT)
+	})
+}
+
+func TestKeywordParser(t *testing.T) {
+	asserts := assert.New(t)
+
+	t.Run("Keyword parser Ok", func(t *testing.T) {
+		token := Token[elm.Never, string]{Value: "let", Expecting: "Expecting let"}
+		keyword := Keyword[elm.Never, string](token)
+
+		SUT := Run(keyword, "let")
+
+		asserts.Equal(elm.Ok[struct{}, []DeadEnd[elm.Never, string]]{Value: struct{}{}}, SUT)
+	})
+
+	t.Run("Keyword parser Err", func(t *testing.T) {
+		token := Token[elm.Never, string]{Value: "let", Expecting: "Expecting let"}
+		keyword := Keyword[elm.Never, string](token)
+
+		SUT := Run(keyword, "letters")
+
+		de := []DeadEnd[elm.Never, string]{DeadEnd[elm.Never, string]{Row: 1, Col: 1, Problem: "Expecting let", ContextStack: nil}}
+
 		asserts.Equal(elm.Err[struct{}, []DeadEnd[elm.Never, string]]{Value: de}, SUT)
 	})
 }

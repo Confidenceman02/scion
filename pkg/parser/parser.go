@@ -6,8 +6,8 @@ import (
 	"scion/pkg/parser/advanced"
 )
 
-type Parser[T any] struct {
-	advanced.Parser[elm.Never, T, Problem]
+type Parser[V any] struct {
+	advanced.Parser[elm.Never, Problem, V]
 }
 
 type DeadEnd struct {
@@ -29,6 +29,10 @@ type Expecting struct {
 	value string
 }
 type ExpectingSymbol struct {
+	_Problem
+	value string
+}
+type ExpectingKeyword struct {
 	_Problem
 	value string
 }
@@ -86,8 +90,14 @@ func problemToDeadend(ade advanced.DeadEnd[elm.Never, Problem]) DeadEnd {
 func Symbol(s string) Parser[struct{}] {
 	token := advanced.Token[elm.Never, Problem]{Value: s, Expecting: ExpectingSymbol{value: s}}
 	return Parser[struct{}]{advanced.Symbol(token)}
+}
+
+func Keyword(kwd string) Parser[struct{}] {
+	token := advanced.Token[elm.Never, Problem]{Value: kwd, Expecting: ExpectingKeyword{value: kwd}}
+	return Parser[struct{}]{advanced.Keyword(token)}
 
 }
+
 func Token(s string) Parser[struct{}] {
 	token := toToken(s)
 	return Parser[struct{}]{token.Token()}
