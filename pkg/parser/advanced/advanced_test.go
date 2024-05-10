@@ -27,6 +27,29 @@ func TestTokenParser(t *testing.T) {
 	})
 }
 
+func TestSymbolParser(t *testing.T) {
+	asserts := assert.New(t)
+
+	t.Run("Symbol parser Ok", func(t *testing.T) {
+		token := Token[elm.Never, string]{Value: "(", Expecting: "Expecting ("}
+		symbol := Symbol[elm.Never, string](token)
+
+		SUT := Run(symbol, "(..)")
+
+		asserts.Equal(elm.Ok[struct{}, []DeadEnd[elm.Never, string]]{Value: struct{}{}}, SUT)
+	})
+
+	t.Run("Symbol parser Err", func(t *testing.T) {
+		token := Token[elm.Never, string]{Value: "(", Expecting: "Expecting ("}
+		symbol := Symbol[elm.Never, string](token)
+
+		SUT := Run(symbol, "..)")
+
+		de := []DeadEnd[elm.Never, string]{DeadEnd[elm.Never, string]{Row: 1, Col: 1, Problem: "Expecting (", ContextStack: nil}}
+		asserts.Equal(elm.Err[struct{}, []DeadEnd[elm.Never, string]]{Value: de}, SUT)
+	})
+}
+
 func TestInContext(t *testing.T) {
 	asserts := assert.New(t)
 
