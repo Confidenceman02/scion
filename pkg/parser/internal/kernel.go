@@ -61,3 +61,40 @@ func IsSubString(
 	}
 	return offset, row, col
 }
+
+// (int32 -> bool)
+type charPredFn func(i int32) bool
+
+/*
+	When parsing, you want to allocate as little as possible.
+
+So this function lets you say:
+
+	IsSubChar IsSpace offset "this is the source string"
+	    --==> newOffset
+
+The `(int32 -> bool)` argument is called a predicate.
+The `newOffset` value can be a few different things:
+
+  - `-1` means that the predicate failed
+  - `-2` means the predicate succeeded with a `\n`
+  - otherwise you will get `offset + 1` or `offset + 2`
+    depending on whether the UTF16 character is one or two
+    words wide.
+*/
+func IsSubChar(predicate charPredFn, offset int, s string) int {
+	if len(s) <= offset {
+		return -1
+	}
+	runeValue, width := utf8.DecodeRuneInString(s[offset:])
+
+	if predicate(runeValue) {
+		// \n
+		if runeValue == 0x000A {
+			return -2
+		} else {
+			return offset + width
+		}
+	}
+	return -1
+}

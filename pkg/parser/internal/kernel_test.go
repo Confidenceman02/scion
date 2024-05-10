@@ -72,3 +72,13 @@ func TestIsSubString(t *testing.T) {
 		asserts.Equal(2, SUT)
 	})
 }
+
+func TestIsSubChar(t *testing.T) {
+	asserts := assert.New(t)
+
+	t.Run("Matches rune", func(t *testing.T) {
+		SUT := IsSubChar(func(char int32) bool { return char == 'h' }, 0, "hello")
+
+		asserts.Equal(1, SUT)
+	})
+}
