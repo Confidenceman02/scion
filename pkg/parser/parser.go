@@ -28,6 +28,10 @@ type Expecting struct {
 	_Problem
 	value string
 }
+type ExpectingSymbol struct {
+	_Problem
+	value string
+}
 
 func (p _Problem) problem() _Problem {
 	return p
@@ -45,7 +49,6 @@ relatively nice parse errors, and I am excited to see those techniques applied
 elsewhere!
 */
 // type Problem
-//   = Expecting String
 //   | ExpectingInt
 //   | ExpectingHex
 //   | ExpectingOctal
@@ -53,7 +56,6 @@ elsewhere!
 //   | ExpectingFloat
 //   | ExpectingNumber
 //   | ExpectingVariable
-//   | ExpectingSymbol String
 //   | ExpectingKeyword String
 //   | ExpectingEnd
 //   | UnexpectedChar
@@ -81,6 +83,11 @@ func problemToDeadend(ade advanced.DeadEnd[elm.Never, Problem]) DeadEnd {
 }
 
 // Parsers
+func Symbol(s string) Parser[struct{}] {
+	token := advanced.Token[elm.Never, Problem]{Value: s, Expecting: ExpectingSymbol{value: s}}
+	return Parser[struct{}]{advanced.Symbol(token)}
+
+}
 func Token(s string) Parser[struct{}] {
 	token := toToken(s)
 	return Parser[struct{}]{token.Token()}
