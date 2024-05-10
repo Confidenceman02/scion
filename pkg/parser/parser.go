@@ -60,7 +60,6 @@ elsewhere!
 //   | ExpectingFloat
 //   | ExpectingNumber
 //   | ExpectingVariable
-//   | ExpectingKeyword String
 //   | ExpectingEnd
 //   | UnexpectedChar
 //   | Problem String
