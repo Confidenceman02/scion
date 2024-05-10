@@ -76,9 +76,33 @@ func TestIsSubString(t *testing.T) {
 func TestIsSubChar(t *testing.T) {
 	asserts := assert.New(t)
 
-	t.Run("Matches rune", func(t *testing.T) {
+	t.Run("Matches single byte rune", func(t *testing.T) {
 		SUT := IsSubChar(func(char int32) bool { return char == 'h' }, 0, "hello")
 
 		asserts.Equal(1, SUT)
+	})
+
+	t.Run("Matches multi byte rune", func(t *testing.T) {
+		SUT := IsSubChar(func(char int32) bool { return char == '⌘' }, 0, "⌘hello")
+
+		asserts.Equal(3, SUT)
+	})
+
+	t.Run("Matches new line rune", func(t *testing.T) {
+		SUT := IsSubChar(func(char int32) bool { return char == '\n' }, 0, "\nhello")
+
+		asserts.Equal(-2, SUT)
+	})
+
+	t.Run("When offset is same size as string", func(t *testing.T) {
+		SUT := IsSubChar(func(char int32) bool { return char == '⌘' }, 3, "⌘")
+
+		asserts.Equal(-1, SUT)
+	})
+
+	t.Run("When string length is smaller than offset", func(t *testing.T) {
+		SUT := IsSubChar(func(char int32) bool { return char == '⌘' }, 6, "⌘")
+
+		asserts.Equal(-1, SUT)
 	})
 }
