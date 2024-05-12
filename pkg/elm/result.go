@@ -5,12 +5,12 @@ A `Result` is the result of a computation that may fail. This is a great way to 
 */
 
 type Result[T any, E any] interface {
-	result() _Result[T, E]
+	result() _result[T, E]
 }
 
-type _Result[T any, E any] struct{}
+type _result[T any, E any] struct{}
 
-func (r _Result[T, E]) result() _Result[T, E] {
+func (r _result[T, E]) result() _result[T, E] {
 	return r
 }
 
@@ -18,7 +18,7 @@ func (r _Result[T, E]) result() _Result[T, E] {
 A `Result` is `Ok` meaning the computation succeeded
 */
 type Ok[T any, E any] struct {
-	_Result[T, E]
+	_result[T, E]
 	Value T
 }
 
@@ -26,7 +26,7 @@ type Ok[T any, E any] struct {
 A `Result` is `Err` meaning the computation failed
 */
 type Err[T any, E any] struct {
-	_Result[T, E]
+	_result[T, E]
 	Value E
 }
 
