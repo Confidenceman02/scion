@@ -78,7 +78,6 @@ func TestDict(t *testing.T) {
 			right: nil,
 		},
 		}, SUT)
-
 	})
 	t.Run("Insert right in to tree", func(t *testing.T) {
 		SUT := Singleton(10, 233)
@@ -100,7 +99,6 @@ func TestDict(t *testing.T) {
 			left: nil,
 		},
 		}, SUT)
-
 	})
 	t.Run("Insert right/left in to tree", func(t *testing.T) {
 		SUT := Singleton(10, 233)
@@ -130,7 +128,21 @@ func TestDict(t *testing.T) {
 			},
 		},
 		}, SUT)
+	})
 
+	t.Run("Insert with no rotations", func(t *testing.T) {
+		SUT := Singleton(10, 233)
+		SUT.Insert(5, 23)
+		SUT.Insert(15, 23)
+		SUT.Insert(2, 23)
+
+		n := SUT.getNode(10)
+
+		asserts.NotNil(n)
+		asserts.Equal(BLACK, n.color)
+		asserts.Equal(BLACK, n.left.color)
+		asserts.Equal(BLACK, n.right.color)
+		asserts.Equal(RED, n.left.left.color)
 	})
 
 	t.Run("Get existing entry", func(t *testing.T) {

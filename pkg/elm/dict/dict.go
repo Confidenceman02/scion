@@ -6,6 +6,12 @@ import (
 	"scion/pkg/elm/maybe"
 )
 
+const (
+	LEFT = iota
+	RIGHT
+	NONE
+)
+
 /*
 Elm Dicts under the hood are Red-Black trees.
 
@@ -83,31 +89,96 @@ func getHelp[K cmp.Ordered, V any](targetKey K, n *node[K, V]) maybe.Maybe[V] {
 	return maybe.Nothing{}
 }
 
+func (d *Dict[K, V]) getNode(targetKey K) *node[K, V] {
+	if d.rbt != nil {
+		return getNodeHelp(targetKey, d.rbt)
+	}
+	return d.rbt
+}
+
+func getNodeHelp[K cmp.Ordered, V any](targetKey K, n *node[K, V]) *node[K, V] {
+	if n != nil {
+		switch elm.Compare(targetKey, n.key) {
+		case elm.LT:
+			return getNodeHelp(targetKey, n.left)
+		case elm.EQ:
+			return n
+		case elm.GT:
+			return getNodeHelp(targetKey, n.right)
+		}
+	}
+	return nil
+
+}
+
 func (d *Dict[K, V]) Insert(key K, v V) {
 	// There is no root, must be an empty tree
 	if d.rbt == nil {
-		d.rbt = &node[K, V]{key: key, value: v, color: BLACK, parent: nil, left: nil, right: nil}
+		d.rbt = &node[K, V]{key: key, value: v, color: RED, parent: nil, left: nil, right: nil}
+		balance(d.rbt)
 	} else {
-		balancedTree := insertHelp(key, v, d.rbt)
-		d.rbt = balancedTree
+		balance(insertHelp(key, v, d.rbt))
 	}
 }
 
+/*
+Returns the inserted node and it's inserted direction
+*/
 func insertHelp[K cmp.Ordered, V any](key K, value V, d *node[K, V]) *node[K, V] {
 	nKey := d.key
 	switch elm.Compare(key, nKey) {
 	case elm.LT:
 		if d.left == nil {
 			d.left = &node[K, V]{key: key, value: value, color: RED, parent: d, left: nil, right: nil}
-			return d
+			return d.left
+		} else {
+			return insertHelp(key, value, d.left)
 		}
 	case elm.EQ:
 		d.value = value
 		return d
 	case elm.GT:
 		d.right = &node[K, V]{key: key, value: value, color: RED, parent: d, left: nil, right: nil}
-		return d
+		return d.right
+		// TODO handle recursive right
 
 	}
 	panic("unreachable")
+}
+
+func balance[K cmp.Ordered, V any](n *node[K, V]) {
+	// Is root
+	if n.parent == nil {
+		n.color = BLACK
+		return
+	}
+	// parent is Black no more work to do
+	if n.parent.color == BLACK {
+		return
+	}
+	parent := n.parent
+	dir := grandparentChildDir(parent)
+
+	switch dir {
+	case LEFT:
+		grandparent := parent.parent
+		uncle := grandparent.right
+		// TODO handle no rotation case
+		if uncle != nil && uncle.color == RED {
+			parent.color = BLACK
+			uncle.color = BLACK
+			grandparent.color = RED
+			balance(grandparent)
+			return
+		}
+	}
+}
+
+func grandparentChildDir[K cmp.Ordered, V any](parentNode *node[K, V]) int {
+	grandparent := parentNode.parent
+	if grandparent.left != nil && parentNode.key == grandparent.left.key {
+		return LEFT
+	} else {
+		return RIGHT
+	}
 }
