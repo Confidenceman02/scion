@@ -1,5 +1,11 @@
 package dict
 
+import (
+	"cmp"
+	"scion/pkg/elm"
+	"scion/pkg/elm/maybe"
+)
+
 /*
 Elm Dicts under the hood are Red-Black trees.
 
@@ -13,28 +19,19 @@ The rules are as follows for Red-Black trees:
     4. Every simple path from a node to a descendant leaf contains the same number of black nodes.
 */
 
-type Dict[K comparable, V any] interface {
-	dict() _dict
-}
-type _dict struct{}
-
-func (r _dict) dict() _dict {
-	return r
+type Dict[K cmp.Ordered, V any] struct {
+	rbt *node[K, V]
 }
 
 // Variants
-type empty[K comparable] struct {
-	_dict
-}
 
-type node[K comparable, V any] struct {
-	_dict
+type node[K cmp.Ordered, V any] struct {
 	key    K
 	value  V
 	color  ncolor
-	parent Dict[K, V]
-	left   Dict[K, V]
-	right  Dict[K, V]
+	parent *node[K, V]
+	left   *node[K, V]
+	right  *node[K, V]
 }
 
 // Node color
@@ -46,58 +43,68 @@ const (
 )
 
 // Methods
-func Empty[K comparable, V any]() Dict[K, V] {
-	e := empty[K]{}
-	return e
+func Empty[K cmp.Ordered, V any]() Dict[K, V] {
+	return Dict[K, V]{rbt: nil}
 }
 
-func Singleton[K comparable, V any](key K, value V) Dict[K, V] {
-	// Root nodes are always black
-	return node[K, V]{key: key, value: value, color: BLACK, parent: empty[K]{}, left: empty[K]{}, right: empty[K]{}}
+func Get[K cmp.Ordered, V any](targetKey K, d Dict[K, V]) maybe.Maybe[V] {
+	if d.rbt == nil {
+		return maybe.Nothing{}
+	} else {
+		return getHelp(targetKey, d.rbt)
+	}
 }
 
-func IsEmpty[K comparable, V any](d Dict[K, V]) bool {
-	return dictWith(
-		d,
-		func(*empty[K]) bool { return true },
-		func(*node[K, V]) bool { return false },
-	)
-}
-
-func Insert[K comparable, V any](key K, v V, d Dict[K, V]) Dict[K, V] {
-	switch n := insertHelp(key, v, d).(type) {
-	case node[K, V]:
-		if n.color == RED {
-			n.color = BLACK
-			return n
+func getHelp[K cmp.Ordered, V any](targetKey K, n *node[K, V]) maybe.Maybe[V] {
+	if n != nil {
+		switch elm.Compare(targetKey, n.key) {
+		case elm.LT:
+			return getHelp(targetKey, n.left)
+		case elm.EQ:
+			return maybe.Just[V]{Value: n.value}
+		case elm.GT:
+			return getHelp(targetKey, n.right)
 		}
-	default:
-		return n
 	}
-	panic("unreachable")
+	return maybe.Nothing{}
 }
 
-func insertHelp[K comparable, V any](key K, value V, dict Dict[K, V]) Dict[K, V] {
-	switch dict.(type) {
-	case empty[K]:
-		return node[K, V]{key: key, value: value, color: RED, parent: empty[K]{}, left: empty[K]{}, right: empty[K]{}}
-	case node[K, V]:
-		return node[K, V]{key: key, value: value, color: RED, parent: empty[K]{}, left: empty[K]{}, right: empty[K]{}}
+func Singleton[K cmp.Ordered, V any](key K, value V) Dict[K, V] {
+	// Root nodes are always black
+	return Dict[K, V]{
+		rbt: &node[K, V]{
+			key:    key,
+			value:  value,
+			color:  BLACK,
+			parent: nil,
+			left:   nil,
+			right:  nil},
 	}
-	panic("unreachable")
 }
 
-// Matcher
-func dictWith[K comparable, V any, R any](
-	d Dict[K, V],
-	e func(*empty[K]) R,
-	n func(*node[K, V]) R,
-) R {
-	switch d := d.(type) {
-	case empty[K]:
-		return e(&d)
-	case node[K, V]:
-		return n(&d)
+func Insert[K cmp.Ordered, V any](key K, v V, d Dict[K, V]) Dict[K, V] {
+	// There is no root, must be an empty tree
+	if d.rbt == nil {
+		d.rbt = &node[K, V]{key: key, value: v, color: BLACK, parent: nil, left: nil, right: nil}
+		return d
+	} else {
+		balancedTree := insertHelp(key, v, d.rbt)
+		d.rbt = balancedTree
+		return d
+	}
+}
+
+func insertHelp[K cmp.Ordered, V any](key K, value V, d *node[K, V]) *node[K, V] {
+	nKey := d.key
+	switch elm.Compare(key, nKey) {
+	case elm.LT:
+		if d.left == nil {
+			d.left = &node[K, V]{key: key, value: value, color: RED, parent: d, left: nil, right: nil}
+			return d
+		}
+	case elm.EQ:
+		d.value = value
+		return d
 	}
 	panic("unreachable")
 }
