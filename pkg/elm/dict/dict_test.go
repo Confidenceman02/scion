@@ -44,7 +44,7 @@ func TestDict(t *testing.T) {
 		)
 	})
 
-	t.Run("Insert into existing dict", func(t *testing.T) {
+	t.Run("Insert into existing entry", func(t *testing.T) {
 		d := Singleton(10, 233)
 		SUT := Insert[int, int](10, 100, d)
 
@@ -56,6 +56,29 @@ func TestDict(t *testing.T) {
 			left:   nil,
 			right:  nil},
 		}, SUT)
+	})
+
+	t.Run("Insert in to tree", func(t *testing.T) {
+		d := Singleton(10, 233)
+		SUT := Insert[int, int](5, 23, d)
+
+		asserts.Equal(Dict[int, int]{rbt: &node[int, int]{
+			key:    10,
+			value:  233,
+			color:  BLACK,
+			parent: nil,
+			left: &node[int, int]{
+				key:    5,
+				value:  23,
+				color:  RED,
+				parent: SUT.rbt,
+				left:   nil,
+				right:  nil,
+			},
+			right: nil,
+		},
+		}, SUT)
+
 	})
 
 	t.Run("Get existing entry", func(t *testing.T) {
