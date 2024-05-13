@@ -16,7 +16,7 @@ func TestDict(t *testing.T) {
 
 	t.Run("Singleton", func(t *testing.T) {
 		SUT := Singleton[int, struct{}](1, struct{}{})
-		asserts.Equal(Dict[int, struct{}]{
+		asserts.Equal(&Dict[int, struct{}]{
 			rbt: &node[int, struct{}]{
 				key:    1,
 				value:  struct{}{},
@@ -30,8 +30,8 @@ func TestDict(t *testing.T) {
 	})
 
 	t.Run("Insert into empty dict", func(t *testing.T) {
-		d := Empty[int, int]()
-		SUT := Insert(1, 233, d)
+		SUT := Empty[int, int]()
+		SUT.Insert(1, 233)
 
 		asserts.Equal(Dict[int, int]{rbt: &node[int, int]{
 			key:    1,
@@ -45,10 +45,10 @@ func TestDict(t *testing.T) {
 	})
 
 	t.Run("Insert into existing entry", func(t *testing.T) {
-		d := Singleton(10, 233)
-		SUT := Insert[int, int](10, 100, d)
+		SUT := Singleton(10, 233)
+		SUT.Insert(10, 100)
 
-		asserts.Equal(Dict[int, int]{rbt: &node[int, int]{
+		asserts.Equal(&Dict[int, int]{rbt: &node[int, int]{
 			key:    10,
 			value:  100,
 			color:  BLACK,
@@ -58,11 +58,11 @@ func TestDict(t *testing.T) {
 		}, SUT)
 	})
 
-	t.Run("Insert in to tree", func(t *testing.T) {
-		d := Singleton(10, 233)
-		SUT := Insert[int, int](5, 23, d)
+	t.Run("Insert left in to tree", func(t *testing.T) {
+		SUT := Singleton(10, 233)
+		SUT.Insert(5, 23)
 
-		asserts.Equal(Dict[int, int]{rbt: &node[int, int]{
+		asserts.Equal(&Dict[int, int]{rbt: &node[int, int]{
 			key:    10,
 			value:  233,
 			color:  BLACK,
@@ -80,17 +80,69 @@ func TestDict(t *testing.T) {
 		}, SUT)
 
 	})
+	t.Run("Insert right in to tree", func(t *testing.T) {
+		SUT := Singleton(10, 233)
+		SUT.Insert(15, 23)
+
+		asserts.Equal(&Dict[int, int]{rbt: &node[int, int]{
+			key:    10,
+			value:  233,
+			color:  BLACK,
+			parent: nil,
+			right: &node[int, int]{
+				key:    15,
+				value:  23,
+				color:  RED,
+				parent: SUT.rbt,
+				left:   nil,
+				right:  nil,
+			},
+			left: nil,
+		},
+		}, SUT)
+
+	})
+	t.Run("Insert right/left in to tree", func(t *testing.T) {
+		SUT := Singleton(10, 233)
+		SUT.Insert(15, 23)
+		SUT.Insert(5, 23)
+
+		asserts.Equal(&Dict[int, int]{rbt: &node[int, int]{
+			key:    10,
+			value:  233,
+			color:  BLACK,
+			parent: nil,
+			right: &node[int, int]{
+				key:    15,
+				value:  23,
+				color:  RED,
+				parent: SUT.rbt,
+				left:   nil,
+				right:  nil,
+			},
+			left: &node[int, int]{
+				key:    5,
+				value:  23,
+				color:  RED,
+				parent: SUT.rbt,
+				left:   nil,
+				right:  nil,
+			},
+		},
+		}, SUT)
+
+	})
 
 	t.Run("Get existing entry", func(t *testing.T) {
 		d := Singleton(10, 23)
-		SUT := Get(10, d)
+		SUT := d.Get(10)
 
 		asserts.Equal(maybe.Just[int]{Value: 23}, SUT)
 	})
 
 	t.Run("Get non-existing entry", func(t *testing.T) {
 		d := Empty[int, int]()
-		SUT := Get(10, d)
+		SUT := d.Get(10)
 
 		asserts.Equal(maybe.Nothing{}, SUT)
 	})

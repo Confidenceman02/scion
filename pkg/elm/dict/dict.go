@@ -42,12 +42,26 @@ const (
 	BLACK
 )
 
-// Methods
+// Builders
 func Empty[K cmp.Ordered, V any]() Dict[K, V] {
 	return Dict[K, V]{rbt: nil}
 }
 
-func Get[K cmp.Ordered, V any](targetKey K, d Dict[K, V]) maybe.Maybe[V] {
+func Singleton[K cmp.Ordered, V any](key K, value V) *Dict[K, V] {
+	// Root nodes are always black
+	return &Dict[K, V]{
+		rbt: &node[K, V]{
+			key:    key,
+			value:  value,
+			color:  BLACK,
+			parent: nil,
+			left:   nil,
+			right:  nil},
+	}
+}
+
+// Methods
+func (d *Dict[K, V]) Get(targetKey K) maybe.Maybe[V] {
 	if d.rbt == nil {
 		return maybe.Nothing{}
 	} else {
@@ -69,28 +83,13 @@ func getHelp[K cmp.Ordered, V any](targetKey K, n *node[K, V]) maybe.Maybe[V] {
 	return maybe.Nothing{}
 }
 
-func Singleton[K cmp.Ordered, V any](key K, value V) Dict[K, V] {
-	// Root nodes are always black
-	return Dict[K, V]{
-		rbt: &node[K, V]{
-			key:    key,
-			value:  value,
-			color:  BLACK,
-			parent: nil,
-			left:   nil,
-			right:  nil},
-	}
-}
-
-func Insert[K cmp.Ordered, V any](key K, v V, d Dict[K, V]) Dict[K, V] {
+func (d *Dict[K, V]) Insert(key K, v V) {
 	// There is no root, must be an empty tree
 	if d.rbt == nil {
 		d.rbt = &node[K, V]{key: key, value: v, color: BLACK, parent: nil, left: nil, right: nil}
-		return d
 	} else {
 		balancedTree := insertHelp(key, v, d.rbt)
 		d.rbt = balancedTree
-		return d
 	}
 }
 
@@ -105,6 +104,10 @@ func insertHelp[K cmp.Ordered, V any](key K, value V, d *node[K, V]) *node[K, V]
 	case elm.EQ:
 		d.value = value
 		return d
+	case elm.GT:
+		d.right = &node[K, V]{key: key, value: value, color: RED, parent: d, left: nil, right: nil}
+		return d
+
 	}
 	panic("unreachable")
 }
