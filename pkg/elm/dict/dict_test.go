@@ -130,20 +130,6 @@ func TestDict(t *testing.T) {
 		}, SUT)
 	})
 
-	t.Run("Insert with no rotations", func(t *testing.T) {
-		SUT := Singleton(10, 233)
-		SUT.Insert(5, 23)
-		SUT.Insert(15, 23)
-		SUT.Insert(2, 23)
-
-		asserts.NotNil(SUT)
-		asserts.Equal(10, SUT.rbt.key)
-		asserts.Equal(BLACK, SUT.rbt.color)
-		asserts.Equal(BLACK, SUT.rbt.left.color)
-		asserts.Equal(BLACK, SUT.rbt.right.color)
-		asserts.Equal(RED, SUT.rbt.left.left.color)
-	})
-
 	t.Run("Get existing entry", func(t *testing.T) {
 		d := Singleton(10, 23)
 		SUT := d.Get(10)
@@ -157,6 +143,44 @@ func TestDict(t *testing.T) {
 
 		asserts.Equal(maybe.Nothing{}, SUT)
 	})
+}
+
+func TestNoRotation(t *testing.T) {
+	asserts := assert.New(t)
+
+	t.Run("Insert with no rotations left", func(t *testing.T) {
+		SUT := Singleton(10, 233)
+		SUT.Insert(5, 23)
+		SUT.Insert(15, 23)
+		SUT.Insert(2, 23)
+
+		asserts.NotNil(SUT)
+		asserts.Equal(10, SUT.rbt.key)
+		asserts.Equal(BLACK, SUT.rbt.color)
+		asserts.Equal(BLACK, SUT.rbt.left.color)
+		asserts.Equal(BLACK, SUT.rbt.right.color)
+		asserts.Equal(RED, SUT.rbt.left.left.color)
+	})
+}
+
+func TestInsertNoRotationsRight(t *testing.T) {
+	asserts := assert.New(t)
+	t.Run("Insert with no rotations right", func(t *testing.T) {
+		d := Singleton(10, 233)
+		d.Insert(5, 23)
+		d.Insert(15, 23)
+		d.Insert(16, 23)
+
+		SUT := d.getNode(10)
+
+		asserts.NotNil(SUT)
+		asserts.Equal(10, SUT.key)
+		asserts.Equal(BLACK, SUT.color)
+		asserts.Equal(BLACK, SUT.left.color)
+		asserts.Equal(BLACK, SUT.right.color)
+		asserts.Equal(RED, SUT.right.right.color)
+	})
+
 }
 
 func TestRightRotation(t *testing.T) {

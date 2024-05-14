@@ -140,8 +140,13 @@ func insertHelp[K cmp.Ordered, V any](key K, value V, d *node[K, V]) *node[K, V]
 		d.value = value
 		return d
 	case elm.GT:
-		d.right = &node[K, V]{key: key, value: value, color: RED, parent: d, left: nil, right: nil}
-		return d.right
+		if d.right == nil {
+			d.right = &node[K, V]{key: key, value: value, color: RED, parent: d, left: nil, right: nil}
+			return d.right
+		} else {
+			return insertHelp(key, value, d.right)
+
+		}
 	}
 	panic("unreachable")
 }
@@ -158,19 +163,28 @@ func balance[K cmp.Ordered, V any](n *node[K, V]) *node[K, V] {
 	}
 	parent := n.parent
 	gDir := grampsSide(parent)
+	grandparent := n.parent.parent
 
 	switch gDir {
+	case RIGHT:
+		uncle := grandparent.left
+
+		// Handle no rotation
+		if uncle != nil && uncle.color == RED {
+			parent.color = BLACK
+			uncle.color = BLACK
+			grandparent.color = RED
+			return balance(grandparent)
+		}
+
 	case LEFT:
-		println("LEFT")
-		grandparent := n.parent.parent
 		uncle := grandparent.right
 		// Handle no rotation case
 		if uncle != nil && uncle.color == RED {
 			parent.color = BLACK
 			uncle.color = BLACK
 			grandparent.color = RED
-			balance(grandparent)
-			return nil
+			return balance(grandparent)
 		}
 		if uncle == nil || uncle.color == BLACK {
 			pDir := parentSide(n)
