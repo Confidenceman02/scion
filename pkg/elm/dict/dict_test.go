@@ -100,6 +100,7 @@ func TestDict(t *testing.T) {
 		},
 		}, SUT)
 	})
+
 	t.Run("Insert right/left in to tree", func(t *testing.T) {
 		SUT := Singleton(10, 233)
 		SUT.Insert(15, 23)
@@ -145,7 +146,7 @@ func TestDict(t *testing.T) {
 	})
 }
 
-func TestNoRotation(t *testing.T) {
+func TestNoRotationLeft(t *testing.T) {
 	asserts := assert.New(t)
 
 	t.Run("Insert with no rotations left", func(t *testing.T) {
@@ -200,5 +201,25 @@ func TestRightRotation(t *testing.T) {
 		asserts.Nil(SUT.right.left)
 		asserts.Equal(BLACK, SUT.color)
 		asserts.Equal(RED, SUT.right.color)
+	})
+}
+func TestLeftRotation(t *testing.T) {
+	asserts := assert.New(t)
+
+	t.Run("RR Right rotation", func(t *testing.T) {
+		d := Singleton(50, 1)
+		d.Insert(60, 2)
+		d.Insert(70, 3)
+
+		SUT := d.getNode(60)
+
+		asserts.NotNil(SUT)
+		asserts.Equal(BLACK, SUT.color)
+		asserts.Nil(SUT.parent)
+		asserts.Equal(60, SUT.key)
+		asserts.Equal(70, SUT.right.key)
+		asserts.Equal(50, SUT.left.key)
+		asserts.Equal(RED, SUT.right.color)
+		asserts.Equal(RED, SUT.left.color)
 	})
 }

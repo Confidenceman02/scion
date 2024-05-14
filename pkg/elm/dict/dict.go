@@ -163,6 +163,7 @@ func balance[K cmp.Ordered, V any](n *node[K, V]) *node[K, V] {
 	}
 	parent := n.parent
 	gDir := grampsSide(parent)
+	pDir := parentSide(n)
 	grandparent := n.parent.parent
 
 	switch gDir {
@@ -176,6 +177,22 @@ func balance[K cmp.Ordered, V any](n *node[K, V]) *node[K, V] {
 			grandparent.color = RED
 			return balance(grandparent)
 		}
+		if uncle == nil || uncle.color == BLACK {
+		}
+		switch pDir {
+		case RIGHT:
+			// RR case -> Left rotation
+			n.rrRotation()
+
+			// If root, return new root
+			if parent.parent != nil {
+				return nil
+			} else {
+				return parent
+			}
+		case LEFT:
+			// TODO RL case
+		}
 
 	case LEFT:
 		uncle := grandparent.right
@@ -187,30 +204,11 @@ func balance[K cmp.Ordered, V any](n *node[K, V]) *node[K, V] {
 			return balance(grandparent)
 		}
 		if uncle == nil || uncle.color == BLACK {
-			pDir := parentSide(n)
 
 			switch pDir {
 			case LEFT:
 				// LL case -> Right rotation
-
-				// 1. Parent gets gramps's parent
-				parent.parent = grandparent.parent
-
-				// 2. Gramps's parent is now parent
-				grandparent.parent = parent
-
-				// 3. Gramps left child is now parents right child
-				grandparent.left = parent.right
-
-				// 4. Parents right child is now gramps
-				parent.right = grandparent
-
-				// 5. Parent and gramps swap colors
-				pColor := parent.color
-				gColor := grandparent.color
-
-				parent.color = gColor
-				grandparent.color = pColor
+				n.llRotation()
 
 				// If root, return new root
 				if parent.parent != nil {
@@ -218,10 +216,60 @@ func balance[K cmp.Ordered, V any](n *node[K, V]) *node[K, V] {
 				} else {
 					return parent
 				}
+			case RIGHT:
+				// TODO: LR case
 			}
 		}
 	}
 	return nil
+}
+
+func (n *node[K, V]) rrRotation() {
+	parent := n.parent
+	grandparent := parent.parent
+
+	// 1. Parent gets gramps's parent
+	parent.parent = grandparent.parent
+
+	// 2. Gramps's parent is now parent
+	grandparent.parent = parent
+
+	// 3. Gramps left child is now parents right child
+	grandparent.right = parent.left
+
+	// 4. Parents right child is now gramps
+	parent.left = grandparent
+
+	// 5. Parent and gramps swap colors
+	pColor := parent.color
+	gColor := grandparent.color
+
+	parent.color = gColor
+	grandparent.color = pColor
+}
+
+func (n *node[K, V]) llRotation() {
+	parent := n.parent
+	grandparent := parent.parent
+
+	// 1. Parent gets gramps's parent
+	parent.parent = grandparent.parent
+
+	// 2. Gramps's parent is now parent
+	grandparent.parent = parent
+
+	// 3. Gramps left child is now parents right child
+	grandparent.left = parent.right
+
+	// 4. Parents right child is now gramps
+	parent.right = grandparent
+
+	// 5. Parent and gramps swap colors
+	pColor := parent.color
+	gColor := grandparent.color
+
+	parent.color = gColor
+	grandparent.color = pColor
 }
 
 func parentSide[K cmp.Ordered, V any](x *node[K, V]) int {
