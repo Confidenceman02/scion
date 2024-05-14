@@ -108,7 +108,6 @@ func getNodeHelp[K cmp.Ordered, V any](targetKey K, n *node[K, V]) *node[K, V] {
 		}
 	}
 	return nil
-
 }
 
 func (d *Dict[K, V]) Insert(key K, v V) {
@@ -117,7 +116,10 @@ func (d *Dict[K, V]) Insert(key K, v V) {
 		d.rbt = &node[K, V]{key: key, value: v, color: RED, parent: nil, left: nil, right: nil}
 		balance(d.rbt)
 	} else {
-		balance(insertHelp(key, v, d.rbt))
+		newRoot := balance(insertHelp(key, v, d.rbt))
+		if newRoot != nil {
+			d.rbt = newRoot
+		}
 	}
 }
 
@@ -140,41 +142,84 @@ func insertHelp[K cmp.Ordered, V any](key K, value V, d *node[K, V]) *node[K, V]
 	case elm.GT:
 		d.right = &node[K, V]{key: key, value: value, color: RED, parent: d, left: nil, right: nil}
 		return d.right
-		// TODO handle recursive right
-
 	}
 	panic("unreachable")
 }
 
-func balance[K cmp.Ordered, V any](n *node[K, V]) {
-	// Is root
+func balance[K cmp.Ordered, V any](n *node[K, V]) *node[K, V] {
+	// Root node
 	if n.parent == nil {
 		n.color = BLACK
-		return
+		return nil
 	}
 	// parent is Black no more work to do
 	if n.parent.color == BLACK {
-		return
+		return nil
 	}
 	parent := n.parent
-	dir := grandparentChildDir(parent)
+	gDir := grampsSide(parent)
 
-	switch dir {
+	switch gDir {
 	case LEFT:
-		grandparent := parent.parent
+		println("LEFT")
+		grandparent := n.parent.parent
 		uncle := grandparent.right
-		// TODO handle no rotation case
+		// Handle no rotation case
 		if uncle != nil && uncle.color == RED {
 			parent.color = BLACK
 			uncle.color = BLACK
 			grandparent.color = RED
 			balance(grandparent)
-			return
+			return nil
 		}
+		if uncle == nil || uncle.color == BLACK {
+			pDir := parentSide(n)
+
+			switch pDir {
+			case LEFT:
+				// LL case -> Right rotation
+
+				// 1. Parent gets gramps's parent
+				parent.parent = grandparent.parent
+
+				// 2. Gramps's parent is now parent
+				grandparent.parent = parent
+
+				// 3. Gramps left child is now parents right child
+				grandparent.left = parent.right
+
+				// 4. Parents right child is now gramps
+				parent.right = grandparent
+
+				// 5. Parent and gramps swap colors
+				pColor := parent.color
+				gColor := grandparent.color
+
+				parent.color = gColor
+				grandparent.color = pColor
+
+				// If root, return new root
+				if parent.parent != nil {
+					return nil
+				} else {
+					return parent
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func parentSide[K cmp.Ordered, V any](x *node[K, V]) int {
+	parent := x.parent
+	if parent.left != nil && x.key == parent.left.key {
+		return LEFT
+	} else {
+		return RIGHT
 	}
 }
 
-func grandparentChildDir[K cmp.Ordered, V any](parentNode *node[K, V]) int {
+func grampsSide[K cmp.Ordered, V any](parentNode *node[K, V]) int {
 	grandparent := parentNode.parent
 	if grandparent.left != nil && parentNode.key == grandparent.left.key {
 		return LEFT
