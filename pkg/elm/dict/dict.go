@@ -9,7 +9,6 @@ import (
 const (
 	LEFT = iota
 	RIGHT
-	NONE
 )
 
 /*
@@ -29,22 +28,17 @@ type Dict[K cmp.Ordered, V any] struct {
 	rbt *node[K, V]
 }
 
-// Variants
-
 type node[K cmp.Ordered, V any] struct {
 	key    K
 	value  V
-	color  ncolor
+	color  int
 	parent *node[K, V]
 	left   *node[K, V]
 	right  *node[K, V]
 }
 
-// Node color
-type ncolor int
-
 const (
-	RED ncolor = iota
+	RED int = iota
 	BLACK
 )
 
@@ -145,7 +139,6 @@ func insertHelp[K cmp.Ordered, V any](key K, value V, d *node[K, V]) *node[K, V]
 			return d.right
 		} else {
 			return insertHelp(key, value, d.right)
-
 		}
 	}
 	panic("unreachable")
@@ -207,7 +200,7 @@ func balance[K cmp.Ordered, V any](n *node[K, V]) *node[K, V] {
 
 			switch pDir {
 			case LEFT:
-				// LL case -> Right rotation
+				// LL rotation
 				n.llRotation()
 
 				// If root, return new root
@@ -217,11 +210,34 @@ func balance[K cmp.Ordered, V any](n *node[K, V]) *node[K, V] {
 					return parent
 				}
 			case RIGHT:
-				// TODO: LR case
+				// LR case -> single right rotation -> balance
+				n.rRotation()
+
+				return balance(n.left)
 			}
 		}
 	}
 	return nil
+}
+
+func (n *node[K, V]) rRotation() {
+	parent := n.parent
+	grandparent := parent.parent
+
+	// 1. n becomes new parent
+	n.parent = parent.parent
+
+	// 2. Parents parent is now n
+	parent.parent = n
+
+	// 3. Gramps's left is n
+	grandparent.left = n
+
+	// 4. Parents right is n's left
+	parent.right = n.left
+
+	// 5. n's left is now parent
+	n.left = parent
 }
 
 func (n *node[K, V]) rrRotation() {

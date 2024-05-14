@@ -223,3 +223,15 @@ func TestLeftRotation(t *testing.T) {
 		asserts.Equal(RED, SUT.left.color)
 	})
 }
+
+func TestLeftRightRotation(t *testing.T) {
+	asserts := assert.New(t)
+
+	t.Run("RL rotation and balance", func(t *testing.T) {
+		SUT := Singleton(50, 1)
+		SUT.Insert(40, 2)
+		SUT.Insert(45, 3)
+
+		asserts.Equal(45, SUT.rbt.key)
+	})
+}
