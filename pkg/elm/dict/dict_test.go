@@ -1,10 +1,9 @@
 package dict
 
 import (
+	"github.com/stretchr/testify/assert"
 	"scion/pkg/elm/maybe"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestDict(t *testing.T) {
@@ -227,11 +226,35 @@ func TestLeftRotation(t *testing.T) {
 func TestLeftRightRotation(t *testing.T) {
 	asserts := assert.New(t)
 
-	t.Run("RL rotation and balance", func(t *testing.T) {
+	t.Run("LR rotation and balance", func(t *testing.T) {
 		SUT := Singleton(50, 1)
 		SUT.Insert(40, 2)
 		SUT.Insert(45, 3)
 
+		asserts.Equal(BLACK, SUT.rbt.color)
 		asserts.Equal(45, SUT.rbt.key)
+		asserts.Nil(SUT.rbt.parent)
+		asserts.Equal(50, SUT.rbt.right.key)
+		asserts.Equal(40, SUT.rbt.left.key)
+		asserts.Equal(RED, SUT.rbt.left.color)
+		asserts.Equal(RED, SUT.rbt.right.color)
+	})
+}
+
+func TestRightLeftRotation(t *testing.T) {
+	asserts := assert.New(t)
+
+	t.Run("RL rotation and balance", func(t *testing.T) {
+		SUT := Singleton(50, 1)
+		SUT.Insert(60, 2)
+		SUT.Insert(55, 3)
+
+		asserts.Equal(BLACK, SUT.rbt.color)
+		asserts.Equal(55, SUT.rbt.key)
+		asserts.Nil(SUT.rbt.parent)
+		asserts.Equal(60, SUT.rbt.right.key)
+		asserts.Equal(RED, SUT.rbt.right.color)
+		asserts.Equal(50, SUT.rbt.left.key)
+		asserts.Equal(RED, SUT.rbt.right.color)
 	})
 }
