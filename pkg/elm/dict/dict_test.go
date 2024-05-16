@@ -145,6 +145,26 @@ func TestDict(t *testing.T) {
 	})
 }
 
+func TestDeepInsertion(t *testing.T) {
+	asserts := assert.New(t)
+	t.Run("Deep insert", func(t *testing.T) {
+		SUT := Singleton(10, 1)
+		SUT.Insert(5, 2)
+		SUT.Insert(20, 3)
+		SUT.Insert(15, 3)
+		SUT.Insert(25, 3)
+		SUT.Insert(30, 3)
+		SUT.Remove(30)
+		n := SUT.getNode(30)
+
+		asserts.Equal(RED, SUT.rbt.right.color)
+		asserts.Equal(BLACK, SUT.rbt.right.left.color)
+		asserts.Equal(BLACK, SUT.rbt.right.right.color)
+		asserts.Nil(n)
+	})
+
+}
+
 func TestNoRotationLeft(t *testing.T) {
 	asserts := assert.New(t)
 
@@ -256,5 +276,49 @@ func TestRightLeftRotation(t *testing.T) {
 		asserts.Equal(RED, SUT.rbt.right.color)
 		asserts.Equal(50, SUT.rbt.left.key)
 		asserts.Equal(RED, SUT.rbt.right.color)
+	})
+}
+
+func TestRemove(t *testing.T) {
+	asserts := assert.New(t)
+
+	t.Run("Removes root node with 2 children", func(t *testing.T) {
+		SUT := Singleton(50, 1)
+		SUT.Insert(60, 2)
+		SUT.Insert(40, 3)
+		SUT.Remove(50)
+
+		asserts.Equal(60, SUT.rbt.key)
+		asserts.Equal(2, SUT.rbt.value)
+		asserts.Equal(40, SUT.rbt.left.key)
+		asserts.Nil(SUT.rbt.right)
+	})
+
+	t.Run("Removes a red right leaf node", func(t *testing.T) {
+		SUT := Singleton(50, 1)
+		SUT.Insert(60, 2)
+		SUT.Insert(40, 3)
+		SUT.Remove(60)
+
+		asserts.Nil(SUT.rbt.right)
+	})
+	t.Run("Removes a red left leaf node", func(t *testing.T) {
+		SUT := Singleton(50, 1)
+		SUT.Insert(40, 2)
+		SUT.Insert(30, 3)
+		SUT.Remove(30)
+
+		asserts.Nil(SUT.rbt.left)
+	})
+	t.Run("CASE 3 - Double black node with sibling with black children", func(t *testing.T) {
+		SUT := Singleton(10, 1)
+		SUT.Insert(5, 2)
+		SUT.Insert(20, 3)
+		SUT.Insert(15, 3)
+		SUT.Insert(25, 3)
+		SUT.Insert(30, 3)
+		SUT.Remove(30)
+
+		asserts.Equal(BLACK, SUT.rbt.color)
 	})
 }

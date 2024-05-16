@@ -94,11 +94,17 @@ func getNodeHelp[K cmp.Ordered, V any](targetKey K, n *node[K, V]) *node[K, V] {
 	if n != nil {
 		switch elm.Compare(targetKey, n.key) {
 		case elm.LT:
-			return getNodeHelp(targetKey, n.left)
+			if n.left != nil {
+				return getNodeHelp(targetKey, n.left)
+			}
+			return nil
 		case elm.EQ:
 			return n
 		case elm.GT:
-			return getNodeHelp(targetKey, n.right)
+			if n.right != nil {
+				return getNodeHelp(targetKey, n.right)
+			}
+			return nil
 		}
 	}
 	return nil
@@ -144,11 +150,132 @@ func insertHelp[K cmp.Ordered, V any](key K, value V, d *node[K, V]) *node[K, V]
 	panic("unreachable")
 }
 
+/*
+Removal is a bit more of a process to that of insertion
+
+Case 1 - Node is a red leaf
+    1.1
+        Delete node and exit
+Case 2 - Double Black (DB) is root
+    2.2
+        Remove DB
+Case 3 - DB sibling is black and both nephews are black
+    3.1
+        Remove DB node
+    3.2
+        Make sibling red
+    3.3
+        Add black to parent. If parent was red, make black
+        otherwise make it a DB and find appropriate CASE
+Case 4 - DB sibling is red
+    4.1 Swap colors of DB parent & sibling
+    4.2 Rotate parent in DB's direction
+    4.3 Find next case for DB
+
+Case 5 - DB sibling is black, far nephew is black and ner nephew is red
+    5.1 Swap colors of the DB sibling and near nephew
+    5.2 Rotate sibling of DB node in opposite direction of DB node
+    5.3 Apply case 6
+Case 6 - DB sibling is black and far nephew is red
+    6.1 Swap the colors of the DB parent and sibling
+    6.2 Rotate DB parent in DB direction
+    6.3 Turn far nephews color to black
+    6.4 Remove DB node to single black
+*/
+
+func (d *Dict[K, V]) Remove(key K) {
+	if d.rbt == nil {
+		// Empty tree
+		return
+	} else {
+		// Find node to delete
+		dn := d.getNode(key)
+		if dn == nil {
+			// Node not found
+			return
+		}
+		removeHelp(dn)
+	}
+}
+
+func removeHelp[K cmp.Ordered, V any](n *node[K, V]) {
+	if n.left == nil && n.right == nil {
+		if n.color == RED {
+			// Red leaf
+			switch parentSide(n) {
+			case RIGHT:
+				n.parent.right = nil
+			case LEFT:
+				n.parent.left = nil
+			}
+			return
+		} else {
+			// Black leaf (DB)
+			fixDB(n)
+			return
+		}
+	}
+	if n.left != nil && n.right != nil {
+		// Internal node || root - find successor -> swap -> delete successor
+		successor := findMin(n.right)
+		n.key = successor.key
+		n.value = successor.value
+		removeHelp(successor)
+		return
+	}
+}
+
+func fixDB[K cmp.Ordered, V any](n *node[K, V]) {
+	if n.parent == nil {
+		// DB is root, nothing more to do
+		return
+	}
+	sibling, siblingSide := findSiblingWithSide(n)
+	if sibling.color == BLACK && sibling.blackChildren() {
+		sibling.color = RED
+		switch siblingSide {
+		case RIGHT:
+			sibling.parent.left = nil
+			if sibling.parent.color == BLACK {
+				// Another (DB)
+				fixDB(sibling.parent)
+				return
+			}
+			sibling.parent.color = BLACK
+			return
+		case LEFT:
+			panic("Not implemented")
+		}
+	}
+}
+
+func (n *node[K, V]) blackChildren() bool {
+	if n != nil {
+		return (n.left == nil || n.left.color == BLACK) && (n.right == nil || n.right.color == BLACK)
+	}
+	return false
+}
+
+func findSiblingWithSide[K cmp.Ordered, V any](n *node[K, V]) (*node[K, V], int) {
+	parent := n.parent
+	if parent.left.key == n.key {
+		return parent.right, RIGHT
+	}
+	return parent.left, LEFT
+}
+
+func findMin[K cmp.Ordered, V any](n *node[K, V]) *node[K, V] {
+	if n.left == nil {
+		return n
+	}
+	return findMin(n.left)
+}
+
 func balance[K cmp.Ordered, V any](n *node[K, V]) *node[K, V] {
 	// Root node
 	if n.parent == nil {
 		n.color = BLACK
-		return nil
+		return n
 	}
 	// parent is Black no more work to do
 	if n.parent.color == BLACK {
