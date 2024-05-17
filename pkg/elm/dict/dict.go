@@ -314,8 +314,8 @@ func balance[K cmp.Ordered, V any](n *node[K, V]) *node[K, V] {
 			}
 		case LEFT:
 			// RL -> Single right rotation -> balance
-			n.lRotation()
-			return balance(n.right)
+			newTarget := n.parent.srRotation()
+			return balance(newTarget)
 		}
 
 	case LEFT:
@@ -348,6 +348,27 @@ func balance[K cmp.Ordered, V any](n *node[K, V]) *node[K, V] {
 		}
 	}
 	return nil
+}
+func (x *node[K, V]) srRotation() *node[K, V] {
+	grandparent := x.parent
+	left := x.left
+
+	// 1. left becomes new parent
+	left.parent = x.parent
+
+	// 2. x's parent is now left
+	x.parent = left
+
+	// 3. x's left is now lefts right
+	x.left = left.right
+
+	// 4. left's right is x
+	left.right = x
+
+	// 5. Grandparent's right is now left
+	grandparent.right = left
+
+	return x
 }
 
 func (x *node[K, V]) slRotation() *node[K, V] {
