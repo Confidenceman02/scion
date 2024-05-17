@@ -211,7 +211,8 @@ func removeHelp[K cmp.Ordered, V any](n *node[K, V]) {
 			return
 		} else {
 			// Black leaf (DB)
-			fixDB(n)
+			sibling, siblingSide := findSiblingWithSide(n)
+			fixDB(nil, sibling, siblingSide)
 			return
 		}
 	}
@@ -225,30 +226,45 @@ func removeHelp[K cmp.Ordered, V any](n *node[K, V]) {
 	}
 }
 
-func fixDB[K cmp.Ordered, V any](db *node[K, V]) {
+func fixDB[K cmp.Ordered, V any](db *node[K, V], sibling *node[K, V], siblingSide int) {
 	// CASE 2
-	if db.parent == nil {
+	if db != nil && db.parent == nil {
 		// DB is root, nothing more to do
 		return
 	}
-	sibling, siblingSide := findSiblingWithSide(db)
 	// CASE 3
 	if sibling.color == BLACK && sibling.blackChildren() {
 		sibling.color = RED
 		switch siblingSide {
 		case RIGHT:
-			sibling.parent.left = nil
-			if sibling.parent.color == BLACK {
+			if db == nil {
+				// delete double black node
+				sibling.parent.left = nil
+			}
+			if sibling.parent.color == BLACK && sibling.parent.parent != nil {
+				sib1, sibSide1 := findSiblingWithSide(sibling.parent)
 				// Another (DB)
-				fixDB(sibling.parent)
+				fixDB(sibling.parent, sib1, sibSide1)
 				return
 			}
 			sibling.parent.color = BLACK
 			return
 		case LEFT:
-			panic("Not implemented")
+			if db == nil {
+				// Delete double black
+				sibling.parent.right = nil
+			}
+			if sibling.parent.color == BLACK && sibling.parent.parent != nil {
+				sib1, sibSide1 := findSiblingWithSide(sibling.parent)
+				// Another (DB)
+				fixDB(sibling.parent, sib1, sibSide1)
+				return
+			}
+			sibling.parent.color = BLACK
+			return
 		}
 	}
+	// TODO Sibling with non black children
 }
 
 func (n *node[K, V]) blackChildren() bool {
@@ -392,45 +408,45 @@ func (x *node[K, V]) slRotation() *node[K, V] {
 	return x
 }
 
-func (n *node[K, V]) lRotation() {
-	parent := n.parent
-	grandparent := parent.parent
+// func (n *node[K, V]) lRotation() {
+// 	parent := n.parent
+// 	grandparent := parent.parent
+//
+// 	// 1. n becomes new parent
+// 	n.parent = grandparent
+//
+// 	// 2. Parents parent is now n
+// 	parent.parent = n
+//
+// 	// 3. Gramps's right is n
+// 	grandparent.right = n
+//
+// 	// 4. Parents left is n's right
+// 	parent.left = n.right
+//
+// 	// 5. n's right is now parent
+// 	n.right = parent
+// }
 
-	// 1. n becomes new parent
-	n.parent = grandparent
-
-	// 2. Parents parent is now n
-	parent.parent = n
-
-	// 3. Gramps's right is n
-	grandparent.right = n
-
-	// 4. Parents left is n's right
-	parent.left = n.right
-
-	// 5. n's right is now parent
-	n.right = parent
-}
-
-func (n *node[K, V]) rRotation() {
-	parent := n.parent
-	grandparent := parent.parent
-
-	// 1. n becomes new parent
-	n.parent = grandparent
-
-	// 2. Parents parent is now n
-	parent.parent = n
-
-	// 3. Gramps's left is n
-	grandparent.left = n
-
-	// 4. Parents right is n's left
-	parent.right = n.left
-
-	// 5. n's left is now parent
-	n.left = parent
-}
+// func (n *node[K, V]) rRotation() {
+// 	parent := n.parent
+// 	grandparent := parent.parent
+//
+// 	// 1. n becomes new parent
+// 	n.parent = grandparent
+//
+// 	// 2. Parents parent is now n
+// 	parent.parent = n
+//
+// 	// 3. Gramps's left is n
+// 	grandparent.left = n
+//
+// 	// 4. Parents right is n's left
+// 	parent.right = n.left
+//
+// 	// 5. n's left is now parent
+// 	n.left = parent
+// }
 
 func (n *node[K, V]) rrRotation() {
 	parent := n.parent

@@ -145,26 +145,6 @@ func TestDict(t *testing.T) {
 	})
 }
 
-func TestDeepInsertion(t *testing.T) {
-	asserts := assert.New(t)
-	t.Run("Deep insert", func(t *testing.T) {
-		SUT := Singleton(10, 1)
-		SUT.Insert(5, 2)
-		SUT.Insert(20, 3)
-		SUT.Insert(15, 3)
-		SUT.Insert(25, 3)
-		SUT.Insert(30, 3)
-		SUT.Remove(30)
-		n := SUT.getNode(30)
-
-		asserts.Equal(RED, SUT.rbt.right.color)
-		asserts.Equal(BLACK, SUT.rbt.right.left.color)
-		asserts.Equal(BLACK, SUT.rbt.right.right.color)
-		asserts.Nil(n)
-	})
-
-}
-
 func TestNoRotationLeft(t *testing.T) {
 	asserts := assert.New(t)
 
@@ -310,7 +290,7 @@ func TestRemove(t *testing.T) {
 
 		asserts.Nil(SUT.rbt.left)
 	})
-	t.Run("CASE 3 - Double black node with sibling with black children", func(t *testing.T) {
+	t.Run("CASE 3 - Double black node with right sibling with black children and red parent", func(t *testing.T) {
 		SUT := Singleton(10, 1)
 		SUT.Insert(5, 2)
 		SUT.Insert(20, 3)
@@ -318,7 +298,55 @@ func TestRemove(t *testing.T) {
 		SUT.Insert(25, 3)
 		SUT.Insert(30, 3)
 		SUT.Remove(30)
+		SUT.Remove(15)
 
 		asserts.Equal(BLACK, SUT.rbt.color)
+		asserts.Equal(BLACK, SUT.rbt.right.color)
+		asserts.Equal(20, SUT.rbt.right.key)
+		asserts.Equal(RED, SUT.rbt.right.right.color)
+		asserts.Equal(25, SUT.rbt.right.right.key)
+		asserts.Nil(SUT.rbt.right.left)
+	})
+	t.Run("CASE 3 - Double black node with left sibling with black children and red parent", func(t *testing.T) {
+		SUT := Singleton(10, 1)
+		SUT.Insert(5, 2)
+		SUT.Insert(20, 3)
+		SUT.Insert(15, 3)
+		SUT.Insert(25, 3)
+		SUT.Insert(30, 3)
+		SUT.Remove(30)
+		SUT.Remove(25)
+
+		asserts.Equal(BLACK, SUT.rbt.color)
+		asserts.Equal(BLACK, SUT.rbt.right.color)
+		asserts.Equal(20, SUT.rbt.right.key)
+		asserts.Equal(RED, SUT.rbt.right.left.color)
+		asserts.Equal(15, SUT.rbt.right.left.key)
+		asserts.Nil(SUT.rbt.right.right)
+	})
+
+	t.Run("CASE 3 - Double black node with left sibling with black children and black parent", func(t *testing.T) {
+		SUT := Singleton(10, 1)
+		SUT.Insert(5, 2)
+		SUT.Insert(20, 3)
+		SUT.Insert(15, 3)
+		SUT.Insert(25, 3)
+		SUT.Insert(7, 3)
+		SUT.Insert(1, 3)
+
+		// Mutate tree to be all black
+		SUT.rbt.left.left.color = BLACK
+		SUT.rbt.left.right.color = BLACK
+		SUT.rbt.right.left.color = BLACK
+		SUT.rbt.right.right.color = BLACK
+
+		SUT.Remove(15)
+
+		asserts.Equal(BLACK, SUT.rbt.color)
+		asserts.Equal(BLACK, SUT.rbt.right.color)
+		asserts.Equal(20, SUT.rbt.right.key)
+		asserts.Equal(RED, SUT.rbt.right.right.color)
+		asserts.Equal(25, SUT.rbt.right.right.key)
+		asserts.Nil(SUT.rbt.right.left)
 	})
 }
