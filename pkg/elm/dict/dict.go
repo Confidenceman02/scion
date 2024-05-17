@@ -201,7 +201,7 @@ func (d *Dict[K, V]) Remove(key K) {
 func removeHelp[K cmp.Ordered, V any](n *node[K, V]) {
 	if n.left == nil && n.right == nil {
 		if n.color == RED {
-			// Red leaf
+			// CASE 1
 			switch parentSide(n) {
 			case RIGHT:
 				n.parent.right = nil
@@ -225,12 +225,14 @@ func removeHelp[K cmp.Ordered, V any](n *node[K, V]) {
 	}
 }
 
-func fixDB[K cmp.Ordered, V any](n *node[K, V]) {
-	if n.parent == nil {
+func fixDB[K cmp.Ordered, V any](db *node[K, V]) {
+	// CASE 2
+	if db.parent == nil {
 		// DB is root, nothing more to do
 		return
 	}
-	sibling, siblingSide := findSiblingWithSide(n)
+	sibling, siblingSide := findSiblingWithSide(db)
+	// CASE 3
 	if sibling.color == BLACK && sibling.blackChildren() {
 		sibling.color = RED
 		switch siblingSide {
@@ -340,13 +342,35 @@ func balance[K cmp.Ordered, V any](n *node[K, V]) *node[K, V] {
 				}
 			case RIGHT:
 				// LR case -> single right rotation -> balance
-				n.rRotation()
-				return balance(n.left)
+				newTarget := n.parent.slRotation()
+				return balance(newTarget)
 			}
 		}
 	}
 	return nil
 }
+
+func (x *node[K, V]) slRotation() *node[K, V] {
+	grandparent := x.parent
+	right := x.right
+	// 1. right becomes new parent
+	right.parent = x.parent
+
+	// 2. x's parent is now right
+	x.parent = right
+
+	// 3. x's right is right's left
+	x.right = right.left
+
+	// 4. right's left is x
+	right.left = x
+
+	// 5. Grandparent's left now points to right
+	grandparent.left = right
+
+	return x
+}
+
 func (n *node[K, V]) lRotation() {
 	parent := n.parent
 	grandparent := parent.parent
@@ -411,8 +435,8 @@ func (n *node[K, V]) rrRotation() {
 	grandparent.color = pColor
 }
 
-func (n *node[K, V]) llRotation() {
-	parent := n.parent
+func (x *node[K, V]) llRotation() {
+	parent := x.parent
 	grandparent := parent.parent
 
 	// 1. Parent gets gramps's parent
