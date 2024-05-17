@@ -194,6 +194,11 @@ func (d *Dict[K, V]) Remove(key K) {
 			// Node not found
 			return
 		}
+		if dn.parent == nil && dn.blackChildren() {
+			// Root is leaf
+			d.rbt = nil
+			return
+		}
 		removeHelp(dn)
 	}
 }
@@ -212,7 +217,14 @@ func removeHelp[K cmp.Ordered, V any](n *node[K, V]) {
 		} else {
 			// Black leaf (DB)
 			sibling, siblingSide := findSiblingWithSide(n)
-			fixDB(nil, sibling, siblingSide)
+			switch siblingSide {
+			case LEFT:
+				n.parent.right = nil
+				fixDB(n, sibling)
+			case RIGHT:
+				n.parent.left = nil
+				fixDB(n, sibling)
+			}
 			return
 		}
 	}
@@ -226,7 +238,7 @@ func removeHelp[K cmp.Ordered, V any](n *node[K, V]) {
 	}
 }
 
-func fixDB[K cmp.Ordered, V any](db *node[K, V], sibling *node[K, V], siblingSide int) {
+func fixDB[K cmp.Ordered, V any](db *node[K, V], sibling *node[K, V]) {
 	// CASE 2
 	if db != nil && db.parent == nil {
 		// DB is root, nothing more to do
@@ -235,34 +247,14 @@ func fixDB[K cmp.Ordered, V any](db *node[K, V], sibling *node[K, V], siblingSid
 	// CASE 3
 	if sibling.color == BLACK && sibling.blackChildren() {
 		sibling.color = RED
-		switch siblingSide {
-		case RIGHT:
-			if db == nil {
-				// delete double black node
-				sibling.parent.left = nil
-			}
-			if sibling.parent.color == BLACK && sibling.parent.parent != nil {
-				sib1, sibSide1 := findSiblingWithSide(sibling.parent)
-				// Another (DB)
-				fixDB(sibling.parent, sib1, sibSide1)
-				return
-			}
-			sibling.parent.color = BLACK
-			return
-		case LEFT:
-			if db == nil {
-				// Delete double black
-				sibling.parent.right = nil
-			}
-			if sibling.parent.color == BLACK && sibling.parent.parent != nil {
-				sib1, sibSide1 := findSiblingWithSide(sibling.parent)
-				// Another (DB)
-				fixDB(sibling.parent, sib1, sibSide1)
-				return
-			}
-			sibling.parent.color = BLACK
+		if sibling.parent.color == BLACK && sibling.parent.parent != nil {
+			sib1, _ := findSiblingWithSide(sibling.parent)
+			// Another (DB)
+			fixDB(sibling.parent, sib1)
 			return
 		}
+		sibling.parent.color = BLACK
+		return
 	}
 	// TODO Sibling with non black children
 }

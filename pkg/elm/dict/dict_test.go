@@ -274,6 +274,13 @@ func TestRemove(t *testing.T) {
 		asserts.Nil(SUT.rbt.right)
 	})
 
+	t.Run("Removes root node with no children", func(t *testing.T) {
+		SUT := Singleton(50, 1)
+		SUT.Remove(50)
+
+		asserts.Nil(SUT.rbt)
+	})
+
 	t.Run("Removes a red right leaf node", func(t *testing.T) {
 		SUT := Singleton(50, 1)
 		SUT.Insert(60, 2)
