@@ -356,4 +356,14 @@ func TestRemove(t *testing.T) {
 		asserts.Equal(25, SUT.rbt.right.right.key)
 		asserts.Nil(SUT.rbt.right.left)
 	})
+
+	t.Run("test the following inserts 7,5,10,20,15", func(t *testing.T) {
+		SUT := Singleton(7, 1)
+		SUT.Insert(5, 2)
+		SUT.Insert(10, 3)
+		SUT.Insert(20, 3)
+		SUT.Insert(15, 3)
+
+		asserts.Equal(15, SUT.rbt.right.key)
+	})
 }
