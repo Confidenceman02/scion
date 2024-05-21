@@ -111,40 +111,33 @@ func getNodeHelp[K cmp.Ordered, V any](targetKey K, n *node[K, V]) *node[K, V] {
 }
 
 func (d *Dict[K, V]) Insert(key K, v V) {
-	// There is no root, must be an empty tree
-	if d.rbt == nil {
-		d.rbt = &node[K, V]{key: key, value: v, color: RED, parent: nil, left: nil, right: nil}
-		balance(d.rbt)
-	} else {
-		newRoot := balance(insertHelp(key, v, d.rbt))
-		if newRoot != nil {
-			d.rbt = newRoot
-		}
-	}
+	balance(d, insertHelp(key, v, d, d.rbt))
 }
 
-/*
-Returns the inserted node and it's inserted direction
-*/
-func insertHelp[K cmp.Ordered, V any](key K, value V, d *node[K, V]) *node[K, V] {
-	nKey := d.key
-	switch elm.Compare(key, nKey) {
-	case elm.LT:
-		if d.left == nil {
-			d.left = &node[K, V]{key: key, value: value, color: RED, parent: d, left: nil, right: nil}
-			return d.left
-		} else {
-			return insertHelp(key, value, d.left)
-		}
-	case elm.EQ:
-		d.value = value
-		return d
-	case elm.GT:
-		if d.right == nil {
-			d.right = &node[K, V]{key: key, value: value, color: RED, parent: d, left: nil, right: nil}
-			return d.right
-		} else {
-			return insertHelp(key, value, d.right)
+func insertHelp[K cmp.Ordered, V any](key K, value V, dict *Dict[K, V], n *node[K, V]) *node[K, V] {
+	if dict.rbt == nil {
+		dict.rbt = &node[K, V]{key: key, value: value, color: RED, parent: nil, left: nil, right: nil}
+		return dict.rbt
+	} else {
+		nKey := n.key
+		switch elm.Compare(key, nKey) {
+		case elm.LT:
+			if n.left == nil {
+				n.left = &node[K, V]{key: key, value: value, color: RED, parent: n, left: nil, right: nil}
+				return n.left
+			} else {
+				return insertHelp(key, value, dict, n.left)
+			}
+		case elm.EQ:
+			n.value = value
+			return n
+		case elm.GT:
+			if n.right == nil {
+				n.right = &node[K, V]{key: key, value: value, color: RED, parent: n, left: nil, right: nil}
+				return n.right
+			} else {
+				return insertHelp(key, value, dict, n.right)
+			}
 		}
 	}
 	panic("unreachable")
@@ -281,85 +274,76 @@ func findMin[K cmp.Ordered, V any](n *node[K, V]) *node[K, V] {
 	return findMin(n.left)
 }
 
-func balance[K cmp.Ordered, V any](n *node[K, V]) *node[K, V] {
-	// Root node
+func balance[K cmp.Ordered, V any](dict *Dict[K, V], n *node[K, V]) {
+	// Root case
 	if n.parent == nil {
 		n.color = BLACK
-		return n
+		dict.rbt = n
+		return
 	}
-	// parent is Black no more work to do
-	if n.parent.color == BLACK {
-		return nil
+	pColor := n.parent.color
+	if pColor == BLACK {
+		// Nothing more to do
+		return
 	}
-	parent := n.parent
-	gDir := grampsSide(parent)
-	pDir := parentSide(n)
-	grandparent := n.parent.parent
+	// Parent and n are red
+	nDir := parentSide(n)
+	pDir := parentSide(n.parent)
 
-	switch gDir {
+	switch nDir {
+	case LEFT:
+		switch pDir {
+		case LEFT:
+			// LL Red - right rotate on grandparent
+			newRoot := n.parent.parent.srRotation()
+			// Push down newRoot color
+			newRoot.right.color = newRoot.color
+			// balance newRoot
+			balance(dict, newRoot)
+			return
+		}
 	case RIGHT:
-		uncle := grandparent.left
-
-		// Handle no rotation
-		if uncle != nil && uncle.color == RED {
-			parent.color = BLACK
-			uncle.color = BLACK
-			grandparent.color = RED
-			return balance(grandparent)
-		}
-		if uncle == nil || uncle.color == BLACK {
-		}
 		switch pDir {
 		case RIGHT:
-			// RR case -> Left rotation
-			n.rrRotation()
-
-			// If root, return new root
-			if parent.parent != nil {
-				return nil
-			} else {
-				return parent
-			}
-		case LEFT:
-			// RL -> Single right rotation -> balance
-			newTarget := n.parent.srRotation()
-			return balance(newTarget)
-		}
-
-	case LEFT:
-		uncle := grandparent.right
-		// Handle no rotation case
-		if uncle != nil && uncle.color == RED {
-			parent.color = BLACK
-			uncle.color = BLACK
-			grandparent.color = RED
-			return balance(grandparent)
-		}
-		if uncle == nil || uncle.color == BLACK {
-
-			switch pDir {
-			case LEFT:
-				// LL rotation
-				n.llRotation()
-
-				// If root, return new root
-				if parent.parent != nil {
-					return nil
-				} else {
-					return parent
-				}
-			case RIGHT:
-				// LR case -> single right rotation -> balance
-				newTarget := n.parent.slRotation()
-				return balance(newTarget)
-			}
+			// RR Red - left rotate on grandparent
+			newRoot := n.parent.parent.slRotation()
+			// Push down newRoot color
+			newRoot.left.color = newRoot.color
+			// balance newRoot
+			balance(dict, newRoot)
+			return
 		}
 	}
-	return nil
+	// We have either a LR or RL
+	uncle := getUncle(n)
+	grandparent := n.parent.parent
+
+	if uncle != nil && uncle.color == RED {
+		// Red uncle - push down blackness from root - balance root
+		uncle.color = grandparent.color
+		n.parent.color = grandparent.color
+		grandparent.color = RED
+		balance(dict, grandparent)
+		return
+	}
+
+	// TODO black uncle
 }
+
 func (x *node[K, V]) srRotation() *node[K, V] {
-	grandparent := x.parent
 	left := x.left
+
+	// Handle x's parent
+	if x.parent != nil {
+		pSide := parentSide(x)
+
+		switch pSide {
+		case LEFT:
+			x.parent.left = left
+		case RIGHT:
+			x.parent.right = left
+		}
+	}
 
 	// 1. left becomes new parent
 	left.parent = x.parent
@@ -373,15 +357,23 @@ func (x *node[K, V]) srRotation() *node[K, V] {
 	// 4. left's right is x
 	left.right = x
 
-	// 5. Grandparent's right is now left
-	grandparent.right = left
-
-	return x
+	return left
 }
 
 func (x *node[K, V]) slRotation() *node[K, V] {
-	grandparent := x.parent
 	right := x.right
+
+	// Handle x's parent
+	if x.parent != nil {
+		pSide := parentSide(x)
+
+		switch pSide {
+		case LEFT:
+			x.parent.left = right
+		case RIGHT:
+			x.parent.right = right
+		}
+	}
 	// 1. right becomes new parent
 	right.parent = x.parent
 
@@ -394,114 +386,36 @@ func (x *node[K, V]) slRotation() *node[K, V] {
 	// 4. right's left is x
 	right.left = x
 
-	// 5. Grandparent's left now points to right
-	grandparent.left = right
-
-	return x
+	return right
 }
 
-// func (n *node[K, V]) lRotation() {
-// 	parent := n.parent
-// 	grandparent := parent.parent
-//
-// 	// 1. n becomes new parent
-// 	n.parent = grandparent
-//
-// 	// 2. Parents parent is now n
-// 	parent.parent = n
-//
-// 	// 3. Gramps's right is n
-// 	grandparent.right = n
-//
-// 	// 4. Parents left is n's right
-// 	parent.left = n.right
-//
-// 	// 5. n's right is now parent
-// 	n.right = parent
-// }
-
-// func (n *node[K, V]) rRotation() {
-// 	parent := n.parent
-// 	grandparent := parent.parent
-//
-// 	// 1. n becomes new parent
-// 	n.parent = grandparent
-//
-// 	// 2. Parents parent is now n
-// 	parent.parent = n
-//
-// 	// 3. Gramps's left is n
-// 	grandparent.left = n
-//
-// 	// 4. Parents right is n's left
-// 	parent.right = n.left
-//
-// 	// 5. n's left is now parent
-// 	n.left = parent
-// }
-
-func (n *node[K, V]) rrRotation() {
+func parentSide[K cmp.Ordered, V any](n *node[K, V]) int {
 	parent := n.parent
-	grandparent := parent.parent
-
-	// 1. Parent gets gramps's parent
-	parent.parent = grandparent.parent
-
-	// 2. Gramps's parent is now parent
-	grandparent.parent = parent
-
-	// 3. Gramps left child is now parents right child
-	grandparent.right = parent.left
-
-	// 4. Parents right child is now gramps
-	parent.left = grandparent
-
-	// 5. Parent and gramps swap colors
-	pColor := parent.color
-	gColor := grandparent.color
-
-	parent.color = gColor
-	grandparent.color = pColor
-}
-
-func (x *node[K, V]) llRotation() {
-	parent := x.parent
-	grandparent := parent.parent
-
-	// 1. Parent gets gramps's parent
-	parent.parent = grandparent.parent
-
-	// 2. Gramps's parent is now parent
-	grandparent.parent = parent
-
-	// 3. Gramps left child is now parents right child
-	grandparent.left = parent.right
-
-	// 4. Parents right child is now gramps
-	parent.right = grandparent
-
-	// 5. Parent and gramps swap colors
-	pColor := parent.color
-	gColor := grandparent.color
-
-	parent.color = gColor
-	grandparent.color = pColor
-}
-
-func parentSide[K cmp.Ordered, V any](x *node[K, V]) int {
-	parent := x.parent
-	if parent.left != nil && x.key == parent.left.key {
+	if parent.left != nil && n.key == parent.left.key {
 		return LEFT
 	} else {
 		return RIGHT
 	}
 }
 
-func grampsSide[K cmp.Ordered, V any](parentNode *node[K, V]) int {
-	grandparent := parentNode.parent
-	if grandparent.left != nil && parentNode.key == grandparent.left.key {
-		return LEFT
-	} else {
-		return RIGHT
+func getUncle[K cmp.Ordered, V any](n *node[K, V]) *node[K, V] {
+	grandparent := n.parent.parent
+	parent := n.parent
+
+	switch parentSide(parent) {
+	case LEFT:
+		// Uncle is right side
+		if grandparent.right != nil {
+			return grandparent.right
+		} else {
+			return nil
+		}
+	case RIGHT:
+		if grandparent.left != nil {
+			return grandparent.left
+		} else {
+			return nil
+		}
 	}
+	panic("unreachable")
 }
