@@ -327,7 +327,22 @@ func balance[K cmp.Ordered, V any](dict *Dict[K, V], n *node[K, V]) {
 		return
 	}
 
-	// TODO black uncle
+	// Black uncle - rotate - balance
+	switch nDir {
+	case RIGHT:
+		// Rotate parent left
+		newRoot := n.parent.slRotation()
+		// balance outer grandchild
+		balance(dict, newRoot.left)
+		return
+
+	case LEFT:
+		// Rotate parent right
+		newRoot := n.parent.srRotation()
+		// balance outer grandchild
+		balance(dict, newRoot.right)
+		return
+	}
 }
 
 func (x *node[K, V]) srRotation() *node[K, V] {

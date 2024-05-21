@@ -89,6 +89,19 @@ func TestDict(t *testing.T) {
 		asserts.Equal(BLACK, SUT.rbt.right.color)
 		asserts.Equal(RED, SUT.rbt.left.right.color)
 	})
+	t.Run("LR double red, black uncle", func(t *testing.T) {
+		SUT := Singleton(50, 1)
+		// Left
+		SUT.Insert(40, 2)
+		SUT.Insert(45, 3)
+
+		asserts.Equal(BLACK, SUT.rbt.color)
+		asserts.Equal(45, SUT.rbt.key)
+		asserts.Equal(RED, SUT.rbt.left.color)
+		asserts.Equal(40, SUT.rbt.left.key)
+		asserts.Equal(RED, SUT.rbt.right.color)
+		asserts.Equal(50, SUT.rbt.right.key)
+	})
 
 	t.Run("RL double red, red uncle", func(t *testing.T) {
 		SUT := Singleton(50, 1)
@@ -100,6 +113,18 @@ func TestDict(t *testing.T) {
 		asserts.Equal(BLACK, SUT.rbt.left.color)
 		asserts.Equal(BLACK, SUT.rbt.right.color)
 		asserts.Equal(RED, SUT.rbt.right.left.color)
+	})
+	t.Run("RL double red, black uncle", func(t *testing.T) {
+		SUT := Singleton(50, 1)
+		SUT.Insert(60, 2)
+		SUT.Insert(55, 4)
+
+		asserts.Equal(BLACK, SUT.rbt.color)
+		asserts.Equal(55, SUT.rbt.key)
+		asserts.Equal(RED, SUT.rbt.left.color)
+		asserts.Equal(50, SUT.rbt.left.key)
+		asserts.Equal(RED, SUT.rbt.right.color)
+		asserts.Equal(60, SUT.rbt.right.key)
 	})
 	// t.Run("Insert into existing entry", func(t *testing.T) {
 	// 	SUT := Singleton(10, 233)
