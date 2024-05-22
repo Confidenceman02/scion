@@ -183,95 +183,64 @@ func (d *Dict[K, V]) Remove(key K) {
 	} else {
 		// Find node to delete
 		dn := d.getNode(key)
-		if dn == nil {
-			// Node not found
-			return
-		}
-		if dn.parent == nil && dn.blackChildren() {
-			// Root is leaf
-			d.root = nil
-			return
-		}
-		removeHelp(dn)
+		removeHelp(d, dn)
 	}
 }
 
-func removeHelp[K cmp.Ordered, V any](n *node[K, V]) {
+func removeHelp[K cmp.Ordered, V any](dict *Dict[K, V], n *node[K, V]) {
+	if n == nil {
+		// Node doesn't exist
+		return
+	}
+	// 2 non-nil children
+	if n.left != nil && n.right != nil {
+		suc := findSuccessor(n)
+		n.key = suc.key
+		n.value = suc.value
+		// root node
+		if n.parent == nil {
+			dict.root = n
+		}
+		removeHelp(dict, suc)
+		return
+	}
+	// 2 nil children
 	if n.left == nil && n.right == nil {
-		if n.color == RED {
-			// CASE 1
-			switch parentSide(n) {
-			case RIGHT:
-				n.parent.right = nil
-			case LEFT:
-				n.parent.left = nil
-			}
+		// root node
+		if n.parent == nil {
+			dict.root = nil
 			return
 		} else {
-			// Black leaf (DB)
-			sibling, siblingSide := findSiblingWithSide(n)
-			switch siblingSide {
-			case LEFT:
-				n.parent.right = nil
-				fixDB(n, sibling)
-			case RIGHT:
-				n.parent.left = nil
-				fixDB(n, sibling)
+			pDir := parentSide(n)
+			// Read leaf
+			if n.color == RED {
+				switch pDir {
+				case LEFT:
+					n.parent.left = nil
+					return
+				case RIGHT:
+					n.parent.right = nil
+					return
+				}
+			} else {
+				// Black leaf
+				// TODO Handle DB node
+				panic("not implemmented")
 			}
-			return
 		}
 	}
-	if n.left != nil && n.right != nil {
-		// Internal node || root - find successor -> swap -> delete successor
-		successor := findMin(n.right)
-		n.key = successor.key
-		n.value = successor.value
-		removeHelp(successor)
-		return
-	}
+	// Must be at least one child
 }
 
-func fixDB[K cmp.Ordered, V any](db *node[K, V], sibling *node[K, V]) {
-	// CASE 2
-	if db != nil && db.parent == nil {
-		// DB is root, nothing more to do
-		return
-	}
-	// CASE 3
-	if sibling.color == BLACK && sibling.blackChildren() {
-		sibling.color = RED
-		if sibling.parent.color == BLACK && sibling.parent.parent != nil {
-			sib1, _ := findSiblingWithSide(sibling.parent)
-			// Another (DB)
-			fixDB(sibling.parent, sib1)
-			return
-		}
-		sibling.parent.color = BLACK
-		return
-	}
-	// TODO Sibling with non black children
+func (n *node[K, V]) hasNilChildren() bool {
+	return n.left == nil && n.right == nil
 }
 
-func (n *node[K, V]) blackChildren() bool {
-	if n != nil {
-		return (n.left == nil || n.left.color == BLACK) && (n.right == nil || n.right.color == BLACK)
-	}
-	return false
-}
-
-func findSiblingWithSide[K cmp.Ordered, V any](n *node[K, V]) (*node[K, V], int) {
-	parent := n.parent
-	if parent.left.key == n.key {
-		return parent.right, RIGHT
-	}
-	return parent.left, LEFT
-}
-
-func findMin[K cmp.Ordered, V any](n *node[K, V]) *node[K, V] {
+func findSuccessor[K cmp.Ordered, V any](n *node[K, V]) *node[K, V] {
 	if n.left == nil {
 		return n
 	}
-	return findMin(n.left)
+	return findSuccessor(n.left)
 }
 
 func balance[K cmp.Ordered, V any](dict *Dict[K, V], n *node[K, V]) {

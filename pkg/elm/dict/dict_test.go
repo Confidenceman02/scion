@@ -197,102 +197,116 @@ func TestGet(t *testing.T) {
 
 }
 
-// func TestRemove(t *testing.T) {
-// 	asserts := assert.New(t)
-//
-// 	t.Run("Removes root node with 2 children", func(t *testing.T) {
-// 		SUT := Singleton(50, 1)
-// 		SUT.Insert(60, 2)
-// 		SUT.Insert(40, 3)
-// 		SUT.Remove(50)
-//
-// 		asserts.Equal(60, SUT.root.key)
-// 		asserts.Equal(2, SUT.root.value)
-// 		asserts.Equal(40, SUT.root.left.key)
-// 		asserts.Nil(SUT.root.right)
-// 	})
-//
-// 	t.Run("Removes root node with no children", func(t *testing.T) {
-// 		SUT := Singleton(50, 1)
-// 		SUT.Remove(50)
-//
-// 		asserts.Nil(SUT.root)
-// 	})
-//
-// 	t.Run("Removes a red right leaf node", func(t *testing.T) {
-// 		SUT := Singleton(50, 1)
-// 		SUT.Insert(60, 2)
-// 		SUT.Insert(40, 3)
-// 		SUT.Remove(60)
-//
-// 		asserts.Nil(SUT.root.right)
-// 	})
-// 	t.Run("Removes a red left leaf node", func(t *testing.T) {
-// 		SUT := Singleton(50, 1)
-// 		SUT.Insert(40, 2)
-// 		SUT.Insert(30, 3)
-// 		SUT.Remove(30)
-//
-// 		asserts.Nil(SUT.root.left)
-// 	})
-// 	t.Run("CASE 3 - Double black node with right sibling with black children and red parent", func(t *testing.T) {
-// 		SUT := Singleton(10, 1)
-// 		SUT.Insert(5, 2)
-// 		SUT.Insert(20, 3)
-// 		SUT.Insert(15, 3)
-// 		SUT.Insert(25, 3)
-// 		SUT.Insert(30, 3)
-// 		SUT.Remove(30)
-// 		SUT.Remove(15)
-//
-// 		asserts.Equal(BLACK, SUT.root.color)
-// 		asserts.Equal(BLACK, SUT.root.right.color)
-// 		asserts.Equal(20, SUT.root.right.key)
-// 		asserts.Equal(RED, SUT.root.right.right.color)
-// 		asserts.Equal(25, SUT.root.right.right.key)
-// 		asserts.Nil(SUT.root.right.left)
-// 	})
-// 	t.Run("CASE 3 - Double black node with left sibling with black children and red parent", func(t *testing.T) {
-// 		SUT := Singleton(10, 1)
-// 		SUT.Insert(5, 2)
-// 		SUT.Insert(20, 3)
-// 		SUT.Insert(15, 3)
-// 		SUT.Insert(25, 3)
-// 		SUT.Insert(30, 3)
-// 		SUT.Remove(30)
-// 		SUT.Remove(25)
-//
-// 		asserts.Equal(BLACK, SUT.root.color)
-// 		asserts.Equal(BLACK, SUT.root.right.color)
-// 		asserts.Equal(20, SUT.root.right.key)
-// 		asserts.Equal(RED, SUT.root.right.left.color)
-// 		asserts.Equal(15, SUT.root.right.left.key)
-// 		asserts.Nil(SUT.root.right.right)
-// 	})
-//
-// 	t.Run("CASE 3 - Double black node with left sibling with black children and black parent", func(t *testing.T) {
-// 		SUT := Singleton(10, 1)
-// 		SUT.Insert(5, 2)
-// 		SUT.Insert(20, 3)
-// 		SUT.Insert(15, 3)
-// 		SUT.Insert(25, 3)
-// 		SUT.Insert(7, 3)
-// 		SUT.Insert(1, 3)
-//
-// 		// Mutate tree to be all black
-// 		SUT.root.left.left.color = BLACK
-// 		SUT.root.left.right.color = BLACK
-// 		SUT.root.right.left.color = BLACK
-// 		SUT.root.right.right.color = BLACK
-//
-// 		SUT.Remove(15)
-//
-// 		asserts.Equal(BLACK, SUT.root.color)
-// 		asserts.Equal(BLACK, SUT.root.right.color)
-// 		asserts.Equal(20, SUT.root.right.key)
-// 		asserts.Equal(RED, SUT.root.right.right.color)
-// 		asserts.Equal(25, SUT.root.right.right.key)
-// 		asserts.Nil(SUT.root.right.left)
-// 	})
-//
-// }
+func TestRemove(t *testing.T) {
+	asserts := assert.New(t)
+
+	t.Run("Removes root node with no children", func(t *testing.T) {
+		SUT := Singleton(50, 1)
+		SUT.Remove(50)
+
+		asserts.Nil(SUT.root)
+	})
+
+	t.Run("Removes root node with 2 red children", func(t *testing.T) {
+		SUT := Singleton(50, 1)
+		SUT.Insert(60, 2)
+		SUT.Insert(40, 3)
+		SUT.Remove(50)
+
+		asserts.Equal(40, SUT.root.key)
+		asserts.Equal(3, SUT.root.value)
+		asserts.Nil(SUT.root.left)
+		asserts.Equal(60, SUT.root.right.key)
+	})
+
+	t.Run("Removes red right leaf node with no children", func(t *testing.T) {
+		SUT := Singleton(50, 1)
+		SUT.Insert(40, 2)
+		SUT.Insert(60, 3)
+		SUT.Remove(60)
+
+		asserts.Nil(SUT.root.right)
+	})
+
+	t.Run("Removes a red left leaf node with no children", func(t *testing.T) {
+		SUT := Singleton(50, 1)
+		SUT.Insert(40, 2)
+		SUT.Insert(60, 3)
+		SUT.Remove(40)
+
+		asserts.Nil(SUT.root.left)
+	})
+	// t.Run("Removes a red internal node", func(t *testing.T) {
+	// 	SUT := Singleton(50, 1)
+	// 	SUT.Insert(40, 2)
+	// 	SUT.Insert(60, 3)
+	// 	SUT.Insert(30, 4)
+	// 	SUT.Insert(45, 5)
+	// 	SUT.Insert(48, 6)
+	// 	SUT.Remove(40)
+	//
+	// 	asserts.Nil(SUT.root.left)
+	// })
+	// 50,40,60,30,45,48
+
+	// t.Run("CASE 3 - Double black node with right sibling with black children and red parent", func(t *testing.T) {
+	// 	SUT := Singleton(10, 1)
+	// 	SUT.Insert(5, 2)
+	// 	SUT.Insert(20, 3)
+	// 	SUT.Insert(15, 3)
+	// 	SUT.Insert(25, 3)
+	// 	SUT.Insert(30, 3)
+	// 	SUT.Remove(30)
+	// 	SUT.Remove(15)
+	//
+	// 	asserts.Equal(BLACK, SUT.root.color)
+	// 	asserts.Equal(BLACK, SUT.root.right.color)
+	// 	asserts.Equal(20, SUT.root.right.key)
+	// 	asserts.Equal(RED, SUT.root.right.right.color)
+	// 	asserts.Equal(25, SUT.root.right.right.key)
+	// 	asserts.Nil(SUT.root.right.left)
+	// })
+	// t.Run("CASE 3 - Double black node with left sibling with black children and red parent", func(t *testing.T) {
+	// 	SUT := Singleton(10, 1)
+	// 	SUT.Insert(5, 2)
+	// 	SUT.Insert(20, 3)
+	// 	SUT.Insert(15, 3)
+	// 	SUT.Insert(25, 3)
+	// 	SUT.Insert(30, 3)
+	// 	SUT.Remove(30)
+	// 	SUT.Remove(25)
+	//
+	// 	asserts.Equal(BLACK, SUT.root.color)
+	// 	asserts.Equal(BLACK, SUT.root.right.color)
+	// 	asserts.Equal(20, SUT.root.right.key)
+	// 	asserts.Equal(RED, SUT.root.right.left.color)
+	// 	asserts.Equal(15, SUT.root.right.left.key)
+	// 	asserts.Nil(SUT.root.right.right)
+	// })
+	//
+	// t.Run("CASE 3 - Double black node with left sibling with black children and black parent", func(t *testing.T) {
+	// 	SUT := Singleton(10, 1)
+	// 	SUT.Insert(5, 2)
+	// 	SUT.Insert(20, 3)
+	// 	SUT.Insert(15, 3)
+	// 	SUT.Insert(25, 3)
+	// 	SUT.Insert(7, 3)
+	// 	SUT.Insert(1, 3)
+	//
+	// 	// Mutate tree to be all black
+	// 	SUT.root.left.left.color = BLACK
+	// 	SUT.root.left.right.color = BLACK
+	// 	SUT.root.right.left.color = BLACK
+	// 	SUT.root.right.right.color = BLACK
+	//
+	// 	SUT.Remove(15)
+	//
+	// 	asserts.Equal(BLACK, SUT.root.color)
+	// 	asserts.Equal(BLACK, SUT.root.right.color)
+	// 	asserts.Equal(20, SUT.root.right.key)
+	// 	asserts.Equal(RED, SUT.root.right.right.color)
+	// 	asserts.Equal(25, SUT.root.right.right.key)
+	// 	asserts.Nil(SUT.root.right.left)
+	// })
+
+}
