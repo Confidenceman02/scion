@@ -165,7 +165,7 @@ Case 4 - DB sibling is red
     4.2 Rotate parent in DB's direction
     4.3 Find next case for DB
 
-Case 5 - DB sibling is black, far nephew is black and ner nephew is red
+Case 5 - DB sibling is black, far nephew is black and near nephew is red
     5.1 Swap colors of the DB sibling and near nephew
     5.2 Rotate sibling of DB node in opposite direction of DB node
     5.3 Apply case 6
@@ -210,30 +210,106 @@ func removeHelp[K cmp.Ordered, V any](dict *Dict[K, V], n *node[K, V]) {
 		if n.parent == nil {
 			dict.root = nil
 			return
-		} else {
-			pDir := parentSide(n)
-			// Read leaf
-			if n.color == RED {
+		}
+
+		pDir := parentSide(n)
+
+		switch n.color {
+		// Read leaf
+		case RED:
+			switch pDir {
+			case LEFT:
+				n.parent.left = nil
+				return
+			case RIGHT:
+				n.parent.right = nil
+				return
+			}
+		case BLACK:
+			// Black leaf
+
+			sibling := findSibling(n)
+			// Black sibling with 2-nil children
+			if sibling.color == BLACK && sibling.hasBlackChildren() {
+				// Case 3 - Black sibling with black children
+
+				// Take note of parent color before transformations
+				pColor := n.parent.color
+				// 3.2 Make sibling red
+				sibling.color = RED
+				// Push blackness to parent
+				n.parent.color = BLACK
 				switch pDir {
 				case LEFT:
+					// 3.1 remove node
 					n.parent.left = nil
-					return
 				case RIGHT:
+					// 3.1 remove node
 					n.parent.right = nil
+				}
+				if pColor == BLACK {
+					// Parent is a DB node
+					fixDB(dict, n.parent)
+					return
+				} else {
 					return
 				}
-			} else {
-				// Black leaf
-				// TODO Handle DB node
-				panic("not implemmented")
+			}
+			// Red sibling
+			if sibling.color == RED {
+				pColor := n.parent.color
+				// Case 4 - Red sibling
+
+				// 4.1 Swap colors of sibling and parent
+				sibling.color = pColor
+				n.parent.color = RED
+
+				// 4.2 Rotate parent towards n's direction
+				switch pDir {
+				case LEFT:
+					n.parent.slRotation()
+					removeHelp(dict, n)
+					return
+				case RIGHT:
+					n.parent.srRotation()
+					removeHelp(dict, n)
+					return
+				}
+
 			}
 		}
 	}
 	// Must be at least one child
 }
 
+func fixDB[K cmp.Ordered, V any](dict *Dict[K, V], n *node[K, V]) {
+	// n is root
+	if n.parent == nil {
+		return
+	}
+	pColor := n.parent.color
+	sibling := findSibling(n)
+
+	if sibling.color == BLACK && sibling.hasBlackChildren() {
+		sibling.color = RED
+		n.parent.color = BLACK
+
+		if pColor == BLACK {
+			fixDB(dict, n.parent)
+			return
+		} else {
+			// Parent was red job done
+			return
+		}
+	}
+}
+
 func (n *node[K, V]) hasNilChildren() bool {
 	return n.left == nil && n.right == nil
+}
+
+func (n *node[K, V]) hasBlackChildren() bool {
+	return (n.left == nil || n.left.color == BLACK) && (n.right == nil || n.right.color == BLACK)
 }
 
 func findSuccessor[K cmp.Ordered, V any](n *node[K, V]) *node[K, V] {
@@ -241,6 +317,15 @@ func findSuccessor[K cmp.Ordered, V any](n *node[K, V]) *node[K, V] {
 		return n
 	}
 	return findSuccessor(n.left)
+}
+
+func findSibling[K cmp.Ordered, V any](n *node[K, V]) *node[K, V] {
+	pDir := parentSide(n)
+	if pDir == LEFT {
+		return n.parent.right
+	} else {
+		return n.parent.left
+	}
 }
 
 func balance[K cmp.Ordered, V any](dict *Dict[K, V], n *node[K, V]) {
