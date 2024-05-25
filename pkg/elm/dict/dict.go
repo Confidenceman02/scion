@@ -146,6 +146,8 @@ func insertHelp[K cmp.Ordered, V any](key K, value V, dict *Dict[K, V], n *node[
 /*
 Removal is a bit more of a process to that of insertion
 
+- Only leaf nodes can be removed
+
 Case 1 - Node is a red leaf
     1.1
         Delete node and exit
@@ -164,7 +166,6 @@ Case 4 - DB sibling is red
     4.1 Swap colors of DB parent & sibling
     4.2 Rotate parent in DB's direction
     4.3 Find next case for DB
-
 Case 5 - DB sibling is black, far nephew is black and near nephew is red
     5.1 Swap colors of the DB sibling and near nephew
     5.2 Rotate sibling of DB node in opposite direction of DB node
@@ -212,16 +213,18 @@ func removeHelp[K cmp.Ordered, V any](dict *Dict[K, V], n *node[K, V]) {
 			return
 		}
 
-		pDir := parentSide(n)
+		pSide := parentSide(n)
 
 		switch n.color {
-		// Read leaf
+		// Case 1 - Red leaf
 		case RED:
-			switch pDir {
+			switch pSide {
 			case LEFT:
+				// 1.1 - Remove node then exit
 				n.parent.left = nil
 				return
 			case RIGHT:
+				// 1.1 - Remove node then exit
 				n.parent.right = nil
 				return
 			}
@@ -239,7 +242,7 @@ func removeHelp[K cmp.Ordered, V any](dict *Dict[K, V], n *node[K, V]) {
 				sibling.color = RED
 				// Push blackness to parent
 				n.parent.color = BLACK
-				switch pDir {
+				switch pSide {
 				case LEFT:
 					// 3.1 remove node
 					n.parent.left = nil
@@ -265,7 +268,7 @@ func removeHelp[K cmp.Ordered, V any](dict *Dict[K, V], n *node[K, V]) {
 				n.parent.color = RED
 
 				// 4.2 Rotate parent towards n's direction
-				switch pDir {
+				switch pSide {
 				case LEFT:
 					n.parent.slRotation()
 					removeHelp(dict, n)
@@ -279,11 +282,11 @@ func removeHelp[K cmp.Ordered, V any](dict *Dict[K, V], n *node[K, V]) {
 			}
 		}
 	}
-	// Must be at least one child
+	// Must be at least one chil
 }
 
 func fixDB[K cmp.Ordered, V any](dict *Dict[K, V], n *node[K, V]) {
-	// n is root
+	// Case 2 - DB is root
 	if n.parent == nil {
 		return
 	}
@@ -302,6 +305,7 @@ func fixDB[K cmp.Ordered, V any](dict *Dict[K, V], n *node[K, V]) {
 			return
 		}
 	}
+	// TODO RED and BLACK child
 }
 
 func (n *node[K, V]) hasNilChildren() bool {

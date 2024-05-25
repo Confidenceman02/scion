@@ -285,7 +285,7 @@ func TestRemove(t *testing.T) {
 		asserts.Equal(RED, SUT.root.right.right.color)
 	})
 
-	t.Run("Removes a black leaf node with no children | p = BLACK | s = RED", func(t *testing.T) {
+	t.Run("Removes a black leaf node with no children | p = BLACK | s = RED | right branch", func(t *testing.T) {
 		SUT := Singleton(10, 1)
 		SUT.Insert(5, 2)
 		SUT.Insert(20, 3)
@@ -319,6 +319,41 @@ func TestRemove(t *testing.T) {
 		asserts.Equal(25, SUT.root.right.left.right.key)
 		asserts.Equal(RED, SUT.root.right.left.right.color)
 		asserts.Nil(SUT.root.right.left.left)
+	})
+	t.Run("Removes a black leaf node with no children | p = BLACK | s = RED | left branch", func(t *testing.T) {
+		SUT := Singleton(50, 1)
+		SUT.Insert(40, 2)
+		SUT.Insert(60, 3)
+		SUT.Insert(70, 2)
+		SUT.Insert(55, 2)
+		SUT.Insert(45, 4)
+		SUT.Insert(35, 5)
+
+		// Mutate tree
+		// LEFT
+		SUT.root.left.color = BLACK
+		SUT.root.left.left.color = RED
+		SUT.root.left.right.color = BLACK
+		// RIGHT
+		SUT.root.right.color = BLACK
+		SUT.root.right.right.color = BLACK
+		SUT.root.right.left.color = BLACK
+
+		// Balance
+		SUT.root.left.left.left = &node[int, int]{parent: SUT.root.left.left, key: 20, value: 6, color: BLACK}
+		SUT.root.left.left.right = &node[int, int]{parent: SUT.root.left.left, key: 37, value: 7, color: BLACK}
+
+		SUT.Remove(45)
+
+		asserts.Equal(35, SUT.root.left.key)
+		asserts.Equal(BLACK, SUT.root.left.color)
+		asserts.Equal(20, SUT.root.left.left.key)
+		asserts.Equal(BLACK, SUT.root.left.left.color)
+		asserts.Equal(40, SUT.root.left.right.key)
+		asserts.Equal(BLACK, SUT.root.left.right.color)
+		asserts.Equal(37, SUT.root.left.right.left.key)
+		asserts.Equal(RED, SUT.root.left.right.left.color)
+		asserts.Nil(SUT.root.left.right.right)
 	})
 
 	// t.Run("CASE 3 - Double black node with right sibling with black children and red parent", func(t *testing.T) {
