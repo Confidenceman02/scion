@@ -234,7 +234,6 @@ func removeHelp[K cmp.Ordered, V any](dict *Dict[K, V], n *node[K, V]) {
 			sibling := findSibling(n)
 			// Black sibling with 2-nil children
 			if sibling.color == BLACK && sibling.hasBlackChildren() {
-				// Case 3 - Black sibling with black children
 
 				// Take note of parent color before transformations
 				pColor := n.parent.color
@@ -278,11 +277,11 @@ func removeHelp[K cmp.Ordered, V any](dict *Dict[K, V], n *node[K, V]) {
 					removeHelp(dict, n)
 					return
 				}
-
 			}
 		}
 	}
-	// Must be at least one chil
+	// Black node with red child
+	panic("Handle black node 1 parent")
 }
 
 func fixDB[K cmp.Ordered, V any](dict *Dict[K, V], n *node[K, V]) {
@@ -291,21 +290,83 @@ func fixDB[K cmp.Ordered, V any](dict *Dict[K, V], n *node[K, V]) {
 		return
 	}
 	pColor := n.parent.color
+	pSide := parentSide(n)
 	sibling := findSibling(n)
 
-	if sibling.color == BLACK && sibling.hasBlackChildren() {
-		sibling.color = RED
-		n.parent.color = BLACK
+	// DB sibling is Black
+	if sibling.color == BLACK {
+		// Case 3
+		if sibling.hasBlackChildren() {
+			sibling.color = RED
+			n.parent.color = BLACK
 
-		if pColor == BLACK {
-			fixDB(dict, n.parent)
-			return
-		} else {
-			// Parent was red job done
-			return
+			if pColor == BLACK {
+				fixDB(dict, n.parent)
+				return
+			} else {
+				// Parent was red job done
+				return
+			}
+		}
+		switch pSide {
+		case LEFT:
+			if sibling.left.isRed() && sibling.right.isBlack() {
+				// Case 5 - far nephew is Black - near nephew is Red
+				// 5.1 - Swap colors of sibling and near nephew
+				sibling.color = RED
+				sibling.left.color = BLACK
+				// 5.2 Rotate sibling of DB node in opposite direction of DB node
+				sibling.srRotation()
+				// 5.3 Apply Case 6
+				fixDB(dict, n)
+				return
+			} else {
+				// Case 6 - Far nephew is Red
+				// 6.1 Swap the colors of the DB parent and sibling
+				n.parent.color = sibling.color
+				sibling.color = pColor
+				// 6.2 Rotate DB parent in DB direction
+				newRoot := n.parent.slRotation()
+				// 6.3 Turn far nephew's color to black
+				newRoot.right.color = BLACK
+				// Check for a new root
+				if newRoot.parent == nil {
+					dict.root = newRoot
+				}
+
+				// 6.4 Remove DB node to single black
+				return
+			}
+		case RIGHT:
+			if sibling.left.isBlack() && sibling.right.isRed() {
+				// Case 5 - far nephew is Black - near nephew is Red
+				// 5.1 Swap colors of the DB sibling and near nephew
+				sibling.color = RED
+				sibling.right.color = BLACK
+				// 5.2 Rotate sibling of DB node in opposite direction of DB node
+				sibling.slRotation()
+				// 5.3 Apply case 6
+				fixDB(dict, n)
+				return
+			} else {
+				// Case 6 - far newphew is Red
+				// 6.1 Swap the colors of the DB parent and sibling
+				n.parent.color = sibling.color
+				sibling.color = pColor
+				// 6.2 Rotate DB parent in DB direction
+				newRoot := n.parent.srRotation()
+				// 6.3 Turn far nephews color to black
+				newRoot.left.color = BLACK
+				// Check for a new root
+				if newRoot.parent == nil {
+					dict.root = newRoot
+				}
+				// 6.4 Remove DB node to single black
+				return
+			}
 		}
 	}
-	// TODO RED and BLACK child
+	panic("unreachable")
 }
 
 func (n *node[K, V]) hasNilChildren() bool {
@@ -314,6 +375,13 @@ func (n *node[K, V]) hasNilChildren() bool {
 
 func (n *node[K, V]) hasBlackChildren() bool {
 	return (n.left == nil || n.left.color == BLACK) && (n.right == nil || n.right.color == BLACK)
+}
+
+func (n *node[K, V]) isBlack() bool {
+	return n == nil || n.color == BLACK
+}
+func (n *node[K, V]) isRed() bool {
+	return n != nil && n.color == RED
 }
 
 func findSuccessor[K cmp.Ordered, V any](n *node[K, V]) *node[K, V] {
