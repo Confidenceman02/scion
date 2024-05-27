@@ -213,10 +213,9 @@ func TestRemove(t *testing.T) {
 		SUT.Insert(40, 3)
 		SUT.Remove(50)
 
-		asserts.Equal(40, SUT.root.key)
-		asserts.Equal(3, SUT.root.value)
-		asserts.Nil(SUT.root.left)
-		asserts.Equal(60, SUT.root.right.key)
+		asserts.Equal(60, SUT.root.key)
+		asserts.Nil(SUT.root.right)
+		asserts.Equal(40, SUT.root.left.key)
 	})
 
 	t.Run("Removes red right leaf node with no children", func(t *testing.T) {
@@ -459,5 +458,203 @@ func TestRemove(t *testing.T) {
 		asserts.Equal(55, SUT.root.right.right.left.key)
 		asserts.Equal(RED, SUT.root.right.right.left.color)
 		asserts.Nil(SUT.root.right.right.right)
+	})
+
+	t.Run("DB | s = BLACK with red and black child | Right subtree", func(t *testing.T) {
+		SUT := Singleton(50, 1)
+		SUT.Insert(60, 2)
+		SUT.Insert(40, 3)
+		SUT.Insert(45, 2)
+		SUT.Insert(30, 2)
+		SUT.Insert(55, 4)
+		SUT.Insert(70, 5)
+
+		// Mutate tree for testing
+		// LEFT
+		SUT.root.left.left.color = BLACK
+		// RIGHT
+		SUT.root.right.right.color = BLACK
+		SUT.root.right.left.color = BLACK
+
+		// Manually Balance
+		SUT.root.left.right.right = &node[int, int]{parent: SUT.root.left.right, key: 47, value: 6, color: BLACK}
+		SUT.root.left.right.left = &node[int, int]{parent: SUT.root.left.right, key: 41, value: 7, color: BLACK}
+
+		SUT.Remove(70)
+
+		asserts.Equal(45, SUT.root.key)
+		asserts.Equal(BLACK, SUT.root.color)
+		asserts.Equal(40, SUT.root.left.key)
+		asserts.Equal(BLACK, SUT.root.left.color)
+		asserts.Equal(50, SUT.root.right.key)
+		asserts.Equal(BLACK, SUT.root.right.color)
+		asserts.Equal(30, SUT.root.left.left.key)
+		asserts.Equal(BLACK, SUT.root.left.left.color)
+		asserts.Equal(60, SUT.root.right.right.key)
+		asserts.Equal(BLACK, SUT.root.right.right.color)
+		asserts.Equal(47, SUT.root.right.left.key)
+		asserts.Equal(BLACK, SUT.root.right.left.color)
+		asserts.Equal(55, SUT.root.right.right.left.key)
+		asserts.Equal(RED, SUT.root.right.right.left.color)
+		asserts.Nil(SUT.root.right.right.right)
+	})
+
+	t.Run("Solve rbt | remove 50,20,100,90,40,60,70,10,30,80", func(t *testing.T) {
+		// https://www.youtube.com/watch?v=PgO_Xj7DC1A&t=16s
+		SUT := Singleton(40, 1)
+		SUT.Insert(20, 2)
+		SUT.Insert(60, 3)
+		SUT.Insert(10, 2)
+		SUT.Insert(30, 2)
+		SUT.Insert(50, 4)
+		SUT.Insert(80, 5)
+
+		// Mutate tree for testing
+		// LEFT
+		SUT.root.left.left.color = BLACK
+		SUT.root.left.right.color = BLACK
+		// RIGHT
+		SUT.root.right.left.color = BLACK
+		// SUT.root.right.right.color = RED
+
+		// Manually Balance
+		SUT.root.right.right.left = &node[int, int]{parent: SUT.root.right.right, key: 70, value: 6, color: BLACK}
+		SUT.root.right.right.right = &node[int, int]{parent: SUT.root.right.right, key: 90, value: 7, color: BLACK}
+		SUT.root.right.right.right.right = &node[int, int]{parent: SUT.root.right.right.right, key: 100, value: 7, color: RED}
+
+		// REMOVE 50
+		SUT.Remove(50)
+
+		asserts.Equal(40, SUT.root.key)
+		asserts.Equal(BLACK, SUT.root.color)
+		// right
+		asserts.Equal(80, SUT.root.right.key)
+		asserts.Equal(BLACK, SUT.root.right.color)
+		// left
+		asserts.Equal(20, SUT.root.left.key)
+		asserts.Equal(BLACK, SUT.root.left.color)
+		// right right
+		asserts.Equal(90, SUT.root.right.right.key)
+		asserts.Equal(BLACK, SUT.root.right.right.color)
+		// left left
+		asserts.Equal(10, SUT.root.left.left.key)
+		asserts.Equal(BLACK, SUT.root.left.left.color)
+		// right right right
+		asserts.Equal(100, SUT.root.right.right.right.key)
+		asserts.Equal(RED, SUT.root.right.right.right.color)
+		// right left
+		asserts.Equal(60, SUT.root.right.left.key)
+		asserts.Equal(BLACK, SUT.root.right.left.color)
+		// left right
+		asserts.Equal(30, SUT.root.left.right.key)
+		asserts.Equal(BLACK, SUT.root.left.right.color)
+		// right left right
+		asserts.Equal(70, SUT.root.right.left.right.key)
+		asserts.Equal(RED, SUT.root.right.left.right.color)
+
+		asserts.Nil(SUT.root.right.left.right.left)
+		asserts.Nil(SUT.root.right.left.right.right)
+
+		// REMOVE 20
+		SUT.Remove(20)
+
+		asserts.Equal(40, SUT.root.key)
+		asserts.Equal(BLACK, SUT.root.color)
+		// left
+		asserts.Equal(30, SUT.root.left.key)
+		asserts.Equal(BLACK, SUT.root.left.color)
+		// left left
+		asserts.Equal(10, SUT.root.left.left.key)
+		asserts.Equal(RED, SUT.root.left.left.color)
+		// left right
+		asserts.Nil(SUT.root.left.right)
+		// right
+		asserts.Equal(80, SUT.root.right.key)
+		asserts.Equal(RED, SUT.root.right.color)
+
+		// REMOVE 100
+		SUT.Remove(100)
+
+		// right right right
+		asserts.Nil(SUT.root.right.right.right)
+
+		// REMOVE 90
+		SUT.Remove(90)
+
+		asserts.Equal(40, SUT.root.key)
+		// right
+		asserts.Equal(70, SUT.root.right.key)
+		asserts.Equal(RED, SUT.root.right.color)
+		// right right
+		asserts.Equal(80, SUT.root.right.right.key)
+		asserts.Equal(BLACK, SUT.root.right.right.color)
+		// right right right
+		asserts.Nil(SUT.root.right.right.right)
+		// right left
+		asserts.Equal(60, SUT.root.right.left.key)
+		asserts.Equal(BLACK, SUT.root.right.left.color)
+		// right left left
+		asserts.Nil(SUT.root.right.left.left)
+		// right left right
+		asserts.Nil(SUT.root.right.left.right)
+
+		// REMOVE 40
+		SUT.Remove(40)
+
+		asserts.Equal(60, SUT.root.key)
+		asserts.Equal(BLACK, SUT.root.color)
+		// right
+		asserts.Equal(70, SUT.root.right.key)
+		asserts.Equal(BLACK, SUT.root.right.color)
+		// right right
+		asserts.Equal(80, SUT.root.right.right.key)
+		asserts.Equal(RED, SUT.root.right.right.color)
+
+		// REMOVE 60
+		SUT.Remove(60)
+
+		asserts.Equal(70, SUT.root.key)
+		asserts.Equal(BLACK, SUT.root.color)
+		// // right
+		asserts.Equal(80, SUT.root.right.key)
+		asserts.Equal(BLACK, SUT.root.right.color)
+
+		// REMOVE 70
+		SUT.Remove(70)
+
+		asserts.Equal(30, SUT.root.key)
+		asserts.Equal(BLACK, SUT.root.color)
+		// right
+		asserts.Equal(80, SUT.root.right.key)
+		asserts.Equal(BLACK, SUT.root.right.color)
+		// left
+		asserts.Equal(10, SUT.root.left.key)
+		asserts.Equal(BLACK, SUT.root.left.color)
+
+		// REMOVE 10
+		SUT.Remove(10)
+
+		asserts.Equal(30, SUT.root.key)
+		asserts.Equal(BLACK, SUT.root.color)
+		// right
+		asserts.Equal(80, SUT.root.right.key)
+		asserts.Equal(RED, SUT.root.right.color)
+		// left
+		asserts.Nil(SUT.root.left)
+
+		// REMOVE 30
+		SUT.Remove(30)
+
+		asserts.Equal(80, SUT.root.key)
+		asserts.Equal(BLACK, SUT.root.color)
+		// right
+		asserts.Nil(SUT.root.right)
+		// left
+		asserts.Nil(SUT.root.left)
+
+		// REMOVE 80
+		SUT.Remove(80)
+
+		asserts.Nil(SUT.root)
 	})
 }

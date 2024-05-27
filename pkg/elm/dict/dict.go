@@ -11,6 +11,11 @@ const (
 	RIGHT
 )
 
+const (
+	RED int = iota
+	BLACK
+)
+
 /*
 Elm Dicts under the hood are Red-Black trees.
 
@@ -20,7 +25,7 @@ The rules are as follows for Red-Black trees:
 
     1. Every node is colored red or black.
     2. Every leaf is a NIL node, and is colored black.
-    3. If a node is red, then both its children are black.
+    3. If a node is red, then both its children are black. (No consecutive red nodes)
     4. Every simple path from a node to a descendant leaf contains the same number of black nodes.
 */
 
@@ -36,11 +41,6 @@ type node[K cmp.Ordered, V any] struct {
 	left   *node[K, V]
 	right  *node[K, V]
 }
-
-const (
-	RED int = iota
-	BLACK
-)
 
 // Builders
 func Empty[K cmp.Ordered, V any]() Dict[K, V] {
@@ -146,6 +146,8 @@ func insertHelp[K cmp.Ordered, V any](key K, value V, dict *Dict[K, V], n *node[
 /*
 Removal is a bit more of a process to that of insertion
 
+For any node, the black height across all paths is equal.
+
 - Only leaf nodes can be removed
 
 Case 1 - Node is a red leaf
@@ -195,7 +197,7 @@ func removeHelp[K cmp.Ordered, V any](dict *Dict[K, V], n *node[K, V]) {
 	}
 	// 2 non-nil children
 	if n.left != nil && n.right != nil {
-		suc := findSuccessor(n)
+		suc := findSuccessor(n.right)
 		n.key = suc.key
 		n.value = suc.value
 		// root node
@@ -229,55 +231,9 @@ func removeHelp[K cmp.Ordered, V any](dict *Dict[K, V], n *node[K, V]) {
 				return
 			}
 		case BLACK:
-			// Black leaf
-
-			sibling := findSibling(n)
-			// Black sibling with 2-nil children
-			if sibling.color == BLACK && sibling.hasBlackChildren() {
-
-				// Take note of parent color before transformations
-				pColor := n.parent.color
-				// 3.2 Make sibling red
-				sibling.color = RED
-				// Push blackness to parent
-				n.parent.color = BLACK
-				switch pSide {
-				case LEFT:
-					// 3.1 remove node
-					n.parent.left = nil
-				case RIGHT:
-					// 3.1 remove node
-					n.parent.right = nil
-				}
-				if pColor == BLACK {
-					// Parent is a DB node
-					fixDB(dict, n.parent)
-					return
-				} else {
-					return
-				}
-			}
-			// Red sibling
-			if sibling.color == RED {
-				pColor := n.parent.color
-				// Case 4 - Red sibling
-
-				// 4.1 Swap colors of sibling and parent
-				sibling.color = pColor
-				n.parent.color = RED
-
-				// 4.2 Rotate parent towards n's direction
-				switch pSide {
-				case LEFT:
-					n.parent.slRotation()
-					removeHelp(dict, n)
-					return
-				case RIGHT:
-					n.parent.srRotation()
-					removeHelp(dict, n)
-					return
-				}
-			}
+			// Black leaf - DB
+			fixDB(dict, n)
+			return
 		}
 	}
 	// Black node with red child
@@ -313,16 +269,28 @@ func fixDB[K cmp.Ordered, V any](dict *Dict[K, V], n *node[K, V]) {
 	if sibling.color == BLACK {
 		// Case 3
 		if sibling.hasBlackChildren() {
+			// Take note of parent color before transformations
+			// pColor := n.parent.color
+			// 3.2 Make sibling red
 			sibling.color = RED
+			// Push blackness to parent
 			n.parent.color = BLACK
+			if n.hasNilChildren() {
+				// Node is a leaf node to delete
+				switch pSide {
+				case LEFT:
+					// 3.1 remove node
+					n.parent.left = nil
+				case RIGHT:
+					// 3.1 remove node
+					n.parent.right = nil
+				}
+			}
 
 			if pColor == BLACK {
 				fixDB(dict, n.parent)
-				return
-			} else {
-				// Parent was red job done
-				return
 			}
+			return
 		}
 		switch pSide {
 		case LEFT:
@@ -351,10 +319,13 @@ func fixDB[K cmp.Ordered, V any](dict *Dict[K, V], n *node[K, V]) {
 				}
 
 				// 6.4 Remove DB node to single black
+				if n.hasNilChildren() {
+					n.parent.left = nil
+				}
 				return
 			}
 		case RIGHT:
-			if sibling.left.isBlack() && sibling.right.isRed() {
+			if sibling.right.isRed() && sibling.left.isBlack() {
 				// Case 5 - far nephew is Black - near nephew is Red
 				// 5.1 Swap colors of the DB sibling and near nephew
 				sibling.color = RED
@@ -378,11 +349,30 @@ func fixDB[K cmp.Ordered, V any](dict *Dict[K, V], n *node[K, V]) {
 					dict.root = newRoot
 				}
 				// 6.4 Remove DB node to single black
+				if n.hasNilChildren() {
+					n.parent.right = nil
+				}
 				return
 			}
 		}
 	}
-	panic("unreachable")
+	// Case 4 - Red sibling
+
+	// 4.1 Swap colors of sibling and parent
+	sibling.color = pColor
+	n.parent.color = RED
+
+	// 4.2 Rotate parent towards n's direction
+	switch pSide {
+	case LEFT:
+		n.parent.slRotation()
+	case RIGHT:
+		n.parent.srRotation()
+	}
+	if n.hasNilChildren() {
+		removeHelp(dict, n)
+	}
+	return
 }
 
 func (n *node[K, V]) hasNilChildren() bool {
@@ -561,20 +551,20 @@ func getUncle[K cmp.Ordered, V any](n *node[K, V]) *node[K, V] {
 	grandparent := n.parent.parent
 	parent := n.parent
 
-	switch parentSide(parent) {
-	case LEFT:
+	if parentSide(parent) == LEFT {
 		// Uncle is right side
 		if grandparent.right != nil {
 			return grandparent.right
 		} else {
 			return nil
 		}
-	case RIGHT:
+
+	} else {
 		if grandparent.left != nil {
 			return grandparent.left
 		} else {
 			return nil
 		}
+
 	}
-	panic("unreachable")
 }
