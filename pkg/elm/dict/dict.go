@@ -106,17 +106,17 @@ func getNodeHelp[K cmp.Ordered, V any](targetKey K, n *node[K, V]) *node[K, V] {
 	if n != nil {
 		switch elm.Compare(targetKey, n.key) {
 		case elm.LT:
-			if n.left != nil {
-				return getNodeHelp(targetKey, n.left)
+			if n.left == nil {
+				return nil
 			}
-			return nil
+			return getNodeHelp(targetKey, n.left)
 		case elm.EQ:
 			return n
 		case elm.GT:
-			if n.right != nil {
-				return getNodeHelp(targetKey, n.right)
+			if n.right == nil {
+				return nil
 			}
-			return nil
+			return getNodeHelp(targetKey, n.right)
 		}
 	}
 	return nil
@@ -151,8 +151,8 @@ func insertHelp[K cmp.Ordered, V any](key K, value V, d *dict[K, V], n *node[K, 
 				return insertHelp(key, value, d, n.right)
 			}
 		}
+		panic("unreachable")
 	}
-	panic("unreachable")
 }
 
 /*
@@ -281,8 +281,6 @@ func fixDB[K cmp.Ordered, V any](d *dict[K, V], n *node[K, V]) {
 	if sibling.color == BLACK {
 		// Case 3
 		if sibling.hasBlackChildren() {
-			// Take note of parent color before transformations
-			// pColor := n.parent.color
 			// 3.2 Make sibling red
 			sibling.color = RED
 			// Push blackness to parent
@@ -499,10 +497,10 @@ func (x *node[K, V]) srRotation() *node[K, V] {
 		case RIGHT:
 			x.parent.right = left
 		}
-		// 1. left becomes new root
+		// 1. left becomes new subtree root
 		left.parent = x.parent
 	} else {
-		// 1. left becomes new root
+		// 1. left becomes new tree root
 		left.parent = nil
 	}
 
@@ -566,18 +564,8 @@ func getUncle[K cmp.Ordered, V any](n *node[K, V]) *node[K, V] {
 
 	if parentSide(parent) == LEFT {
 		// Uncle is right side
-		if grandparent.right != nil {
-			return grandparent.right
-		} else {
-			return nil
-		}
-
+		return grandparent.right
 	} else {
-		if grandparent.left != nil {
-			return grandparent.left
-		} else {
-			return nil
-		}
-
+		return grandparent.left
 	}
 }
