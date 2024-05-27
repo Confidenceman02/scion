@@ -434,7 +434,6 @@ func TestRemove(t *testing.T) {
 		// Mutate tree for testing
 		// LEFT
 		SUT.root.left.left.color = BLACK
-		SUT.root.left.right.color = RED
 		// RIGHT
 		SUT.root.right.right.color = BLACK
 		SUT.root.right.left.color = BLACK
@@ -443,17 +442,22 @@ func TestRemove(t *testing.T) {
 		SUT.root.left.right.right = &node[int, int]{parent: SUT.root.left.right, key: 47, value: 6, color: BLACK}
 		SUT.root.left.right.left = &node[int, int]{parent: SUT.root.left.right, key: 41, value: 7, color: BLACK}
 
-		SUT.Remove(40)
+		SUT.Remove(70)
 
-		// asserts.Equal(25, SUT.root.key)
-		// asserts.Equal(10, SUT.root.left.key)
-		// asserts.Equal(30, SUT.root.right.key)
-		// asserts.Equal(BLACK, SUT.root.right.color)
-		// asserts.Equal(5, SUT.root.left.left.key)
-		// asserts.Equal(BLACK, SUT.root.left.left.color)
-		// asserts.Equal(7, SUT.root.left.left.right.key)
-		// asserts.Equal(RED, SUT.root.left.left.right.color)
-		// asserts.Equal(20, SUT.root.left.right.key)
+		asserts.Equal(45, SUT.root.key)
+		asserts.Equal(BLACK, SUT.root.color)
+		asserts.Equal(40, SUT.root.left.key)
+		asserts.Equal(BLACK, SUT.root.left.color)
+		asserts.Equal(50, SUT.root.right.key)
+		asserts.Equal(BLACK, SUT.root.right.color)
+		asserts.Equal(30, SUT.root.left.left.key)
+		asserts.Equal(BLACK, SUT.root.left.left.color)
+		asserts.Equal(60, SUT.root.right.right.key)
+		asserts.Equal(BLACK, SUT.root.right.right.color)
+		asserts.Equal(47, SUT.root.right.left.key)
+		asserts.Equal(BLACK, SUT.root.right.left.color)
+		asserts.Equal(55, SUT.root.right.right.left.key)
+		asserts.Equal(RED, SUT.root.right.right.left.color)
+		asserts.Nil(SUT.root.right.right.right)
 	})
-
 }
