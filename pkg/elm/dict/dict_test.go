@@ -237,7 +237,7 @@ func TestRemove(t *testing.T) {
 		asserts.Nil(SUT.root.left)
 	})
 
-	t.Run("Removes a black leaf node with 1 child", func(t *testing.T) {
+	t.Run("Removes a black leaf node with 1 child | Left", func(t *testing.T) {
 		SUT := Singleton(50, 1)
 		SUT.Insert(40, 2)
 		SUT.Insert(60, 3)
@@ -250,7 +250,21 @@ func TestRemove(t *testing.T) {
 		asserts.Equal(45, SUT.root.left.key)
 		asserts.Equal(BLACK, SUT.root.left.color)
 		asserts.Nil(SUT.root.left.right)
-		asserts.Nil(SUT.root.left.left)
+	})
+
+	t.Run("Removes a black leaf node with 1 child | Right", func(t *testing.T) {
+		SUT := Singleton(50, 1)
+		SUT.Insert(40, 2)
+		SUT.Insert(60, 3)
+		SUT.Insert(55, 4)
+
+		SUT.Remove(60)
+
+		asserts.Equal(50, SUT.root.key)
+		asserts.Equal(BLACK, SUT.root.color)
+		asserts.Equal(55, SUT.root.right.key)
+		asserts.Equal(BLACK, SUT.root.right.color)
+		asserts.Nil(SUT.root.right.left)
 	})
 
 	t.Run("Removes a black leaf node with no children | p = RED | s = BLACK with no children", func(t *testing.T) {

@@ -281,7 +281,23 @@ func removeHelp[K cmp.Ordered, V any](dict *Dict[K, V], n *node[K, V]) {
 		}
 	}
 	// Black node with red child
-	panic("Handle black node 1 parent")
+	if n.left == nil {
+		// No child on the left
+
+		// Replace node with child
+		n.key = n.right.key
+		n.value = n.right.value
+		removeHelp(dict, n.right)
+		return
+	} else {
+		// No child on the right
+
+		// Replace node with child
+		n.key = n.left.key
+		n.value = n.left.value
+		removeHelp(dict, n.left)
+		return
+	}
 }
 
 func fixDB[K cmp.Ordered, V any](dict *Dict[K, V], n *node[K, V]) {
