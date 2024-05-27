@@ -23,13 +23,25 @@ Insertions are standard BST insertions.
 
 The rules are as follows for Red-Black trees:
 
-    1. Every node is colored red or black.
-    2. Every leaf is a NIL node, and is colored black.
-    3. If a node is red, then both its children are black. (No consecutive red nodes)
-    4. Every simple path from a node to a descendant leaf contains the same number of black nodes.
+ 1. Every node is colored red or black.
+ 2. Every leaf is a NIL node, and is colored black.
+ 3. If a node is red, then both its children are black. (No consecutive red nodes)
+ 4. Every simple path from a node to a descendant leaf contains the same number of black nodes.
 */
+type Dict[K cmp.Ordered, V any] interface {
+	rbt() *dict[K, V]
 
-type Dict[K cmp.Ordered, V any] struct {
+	// Operations
+	Insert(k K, v V)
+	Get(k K) maybe.Maybe[V]
+	Remove(k K)
+}
+
+func (d *dict[K, V]) rbt() *dict[K, V] {
+	return d
+}
+
+type dict[K cmp.Ordered, V any] struct {
 	root *node[K, V]
 }
 
@@ -44,12 +56,12 @@ type node[K cmp.Ordered, V any] struct {
 
 // Builders
 func Empty[K cmp.Ordered, V any]() Dict[K, V] {
-	return Dict[K, V]{root: nil}
+	return &dict[K, V]{root: nil}
 }
 
-func Singleton[K cmp.Ordered, V any](key K, value V) *Dict[K, V] {
+func Singleton[K cmp.Ordered, V any](key K, value V) Dict[K, V] {
 	// Root nodes are always black
-	return &Dict[K, V]{
+	return &dict[K, V]{
 		root: &node[K, V]{
 			key:    key,
 			value:  value,
@@ -61,7 +73,7 @@ func Singleton[K cmp.Ordered, V any](key K, value V) *Dict[K, V] {
 }
 
 // Methods
-func (d *Dict[K, V]) Get(targetKey K) maybe.Maybe[V] {
+func (d *dict[K, V]) Get(targetKey K) maybe.Maybe[V] {
 	if d.root == nil {
 		return maybe.Nothing{}
 	} else {
@@ -83,7 +95,7 @@ func getHelp[K cmp.Ordered, V any](targetKey K, n *node[K, V]) maybe.Maybe[V] {
 	return maybe.Nothing{}
 }
 
-func (d *Dict[K, V]) getNode(targetKey K) *node[K, V] {
+func (d *dict[K, V]) getNode(targetKey K) *node[K, V] {
 	if d.root != nil {
 		return getNodeHelp(targetKey, d.root)
 	}
@@ -110,14 +122,14 @@ func getNodeHelp[K cmp.Ordered, V any](targetKey K, n *node[K, V]) *node[K, V] {
 	return nil
 }
 
-func (d *Dict[K, V]) Insert(key K, v V) {
+func (d *dict[K, V]) Insert(key K, v V) {
 	balance(d, insertHelp(key, v, d, d.root))
 }
 
-func insertHelp[K cmp.Ordered, V any](key K, value V, dict *Dict[K, V], n *node[K, V]) *node[K, V] {
-	if dict.root == nil {
-		dict.root = &node[K, V]{key: key, value: value, color: RED, parent: nil, left: nil, right: nil}
-		return dict.root
+func insertHelp[K cmp.Ordered, V any](key K, value V, d *dict[K, V], n *node[K, V]) *node[K, V] {
+	if d.root == nil {
+		d.root = &node[K, V]{key: key, value: value, color: RED, parent: nil, left: nil, right: nil}
+		return d.root
 	} else {
 		nKey := n.key
 		switch elm.Compare(key, nKey) {
@@ -126,7 +138,7 @@ func insertHelp[K cmp.Ordered, V any](key K, value V, dict *Dict[K, V], n *node[
 				n.left = &node[K, V]{key: key, value: value, color: RED, parent: n, left: nil, right: nil}
 				return n.left
 			} else {
-				return insertHelp(key, value, dict, n.left)
+				return insertHelp(key, value, d, n.left)
 			}
 		case elm.EQ:
 			n.value = value
@@ -136,7 +148,7 @@ func insertHelp[K cmp.Ordered, V any](key K, value V, dict *Dict[K, V], n *node[
 				n.right = &node[K, V]{key: key, value: value, color: RED, parent: n, left: nil, right: nil}
 				return n.right
 			} else {
-				return insertHelp(key, value, dict, n.right)
+				return insertHelp(key, value, d, n.right)
 			}
 		}
 	}
@@ -179,7 +191,7 @@ Case 6 - DB sibling is black and far nephew is red
     6.4 Remove DB node to single black
 */
 
-func (d *Dict[K, V]) Remove(key K) {
+func (d *dict[K, V]) Remove(key K) {
 	if d.root == nil {
 		// Empty tree
 		return
@@ -190,7 +202,7 @@ func (d *Dict[K, V]) Remove(key K) {
 	}
 }
 
-func removeHelp[K cmp.Ordered, V any](dict *Dict[K, V], n *node[K, V]) {
+func removeHelp[K cmp.Ordered, V any](d *dict[K, V], n *node[K, V]) {
 	if n == nil {
 		// Node doesn't exist
 		return
@@ -202,16 +214,16 @@ func removeHelp[K cmp.Ordered, V any](dict *Dict[K, V], n *node[K, V]) {
 		n.value = suc.value
 		// root node
 		if n.parent == nil {
-			dict.root = n
+			d.root = n
 		}
-		removeHelp(dict, suc)
+		removeHelp(d, suc)
 		return
 	}
 	// 2 nil children
 	if n.left == nil && n.right == nil {
 		// root node
 		if n.parent == nil {
-			dict.root = nil
+			d.root = nil
 			return
 		}
 
@@ -232,7 +244,7 @@ func removeHelp[K cmp.Ordered, V any](dict *Dict[K, V], n *node[K, V]) {
 			}
 		case BLACK:
 			// Black leaf - DB
-			fixDB(dict, n)
+			fixDB(d, n)
 			return
 		}
 	}
@@ -243,7 +255,7 @@ func removeHelp[K cmp.Ordered, V any](dict *Dict[K, V], n *node[K, V]) {
 		// Replace node with child
 		n.key = n.right.key
 		n.value = n.right.value
-		removeHelp(dict, n.right)
+		removeHelp(d, n.right)
 		return
 	} else {
 		// No child on the right
@@ -251,12 +263,12 @@ func removeHelp[K cmp.Ordered, V any](dict *Dict[K, V], n *node[K, V]) {
 		// Replace node with child
 		n.key = n.left.key
 		n.value = n.left.value
-		removeHelp(dict, n.left)
+		removeHelp(d, n.left)
 		return
 	}
 }
 
-func fixDB[K cmp.Ordered, V any](dict *Dict[K, V], n *node[K, V]) {
+func fixDB[K cmp.Ordered, V any](d *dict[K, V], n *node[K, V]) {
 	// Case 2 - DB is root
 	if n.parent == nil {
 		return
@@ -287,9 +299,10 @@ func fixDB[K cmp.Ordered, V any](dict *Dict[K, V], n *node[K, V]) {
 				}
 			}
 
-			if pColor == BLACK {
-				fixDB(dict, n.parent)
+			if pColor != BLACK {
+				return
 			}
+			fixDB(d, n.parent)
 			return
 		}
 		switch pSide {
@@ -302,7 +315,7 @@ func fixDB[K cmp.Ordered, V any](dict *Dict[K, V], n *node[K, V]) {
 				// 5.2 Rotate sibling of DB node in opposite direction of DB node
 				sibling.srRotation()
 				// 5.3 Apply Case 6
-				fixDB(dict, n)
+				fixDB(d, n)
 				return
 			} else {
 				// Case 6 - Far nephew is Red
@@ -315,7 +328,7 @@ func fixDB[K cmp.Ordered, V any](dict *Dict[K, V], n *node[K, V]) {
 				newRoot.right.color = BLACK
 				// Check for a new root
 				if newRoot.parent == nil {
-					dict.root = newRoot
+					d.root = newRoot
 				}
 
 				// 6.4 Remove DB node to single black
@@ -333,7 +346,7 @@ func fixDB[K cmp.Ordered, V any](dict *Dict[K, V], n *node[K, V]) {
 				// 5.2 Rotate sibling of DB node in opposite direction of DB node
 				sibling.slRotation()
 				// 5.3 Apply case 6
-				fixDB(dict, n)
+				fixDB(d, n)
 				return
 			} else {
 				// Case 6 - far newphew is Red
@@ -346,7 +359,7 @@ func fixDB[K cmp.Ordered, V any](dict *Dict[K, V], n *node[K, V]) {
 				newRoot.left.color = BLACK
 				// Check for a new root
 				if newRoot.parent == nil {
-					dict.root = newRoot
+					d.root = newRoot
 				}
 				// 6.4 Remove DB node to single black
 				if n.hasNilChildren() {
@@ -370,7 +383,7 @@ func fixDB[K cmp.Ordered, V any](dict *Dict[K, V], n *node[K, V]) {
 		n.parent.srRotation()
 	}
 	if n.hasNilChildren() {
-		removeHelp(dict, n)
+		removeHelp(d, n)
 	}
 	return
 }
@@ -406,11 +419,11 @@ func findSibling[K cmp.Ordered, V any](n *node[K, V]) *node[K, V] {
 	}
 }
 
-func balance[K cmp.Ordered, V any](dict *Dict[K, V], n *node[K, V]) {
+func balance[K cmp.Ordered, V any](d *dict[K, V], n *node[K, V]) {
 	// Root case
 	if n.parent == nil {
 		n.color = BLACK
-		dict.root = n
+		d.root = n
 		return
 	}
 	pColor := n.parent.color
@@ -429,7 +442,7 @@ func balance[K cmp.Ordered, V any](dict *Dict[K, V], n *node[K, V]) {
 		uncle.color = grandparent.color
 		n.parent.color = grandparent.color
 		grandparent.color = RED
-		balance(dict, grandparent)
+		balance(d, grandparent)
 		return
 	}
 	// Black uncle
@@ -444,12 +457,12 @@ func balance[K cmp.Ordered, V any](dict *Dict[K, V], n *node[K, V]) {
 			newRoot.right.color = newRoot.color
 			newRoot.color = rCol
 			// balance newRoot
-			balance(dict, newRoot)
+			balance(d, newRoot)
 			return
 		case RIGHT:
 			// LR - rotate parent left - balance left of root
 			newRoot := n.parent.slRotation()
-			balance(dict, newRoot.left)
+			balance(d, newRoot.left)
 			return
 		}
 	case RIGHT:
@@ -462,12 +475,12 @@ func balance[K cmp.Ordered, V any](dict *Dict[K, V], n *node[K, V]) {
 			newRoot.left.color = newRoot.color
 			newRoot.color = lCol
 			// balance newRoot
-			balance(dict, newRoot)
+			balance(d, newRoot)
 			return
 		case LEFT:
 			//RL - rotate parent right - balance right of root
 			newRoot := n.parent.srRotation()
-			balance(dict, newRoot.right)
+			balance(d, newRoot.right)
 			return
 		}
 	}

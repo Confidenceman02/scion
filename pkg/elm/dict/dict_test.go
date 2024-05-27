@@ -10,12 +10,13 @@ func TestInsert(t *testing.T) {
 	asserts := assert.New(t)
 
 	t.Run("Empty", func(t *testing.T) {
-		asserts.Equal(Dict[int, struct{}]{root: nil}, Empty[int, struct{}]())
+		asserts.Equal(&dict[int, struct{}]{root: nil}, Empty[int, struct{}]())
 	})
 
 	t.Run("Singleton", func(t *testing.T) {
-		SUT := Singleton[int, struct{}](1, struct{}{})
-		asserts.Equal(&Dict[int, struct{}]{
+		d := Singleton[int, struct{}](1, struct{}{})
+		SUT := d.rbt()
+		asserts.Equal(&dict[int, struct{}]{
 			root: &node[int, struct{}]{
 				key:    1,
 				value:  struct{}{},
@@ -29,10 +30,12 @@ func TestInsert(t *testing.T) {
 	})
 
 	t.Run("Insert nil root", func(t *testing.T) {
-		SUT := Empty[int, int]()
-		SUT.Insert(1, 233)
+		d := Empty[int, int]()
+		d.Insert(1, 233)
 
-		asserts.Equal(Dict[int, int]{root: &node[int, int]{
+		SUT := d.rbt()
+
+		asserts.Equal(&dict[int, int]{root: &node[int, int]{
 			key:    1,
 			value:  233,
 			color:  BLACK,
@@ -44,18 +47,22 @@ func TestInsert(t *testing.T) {
 	})
 
 	t.Run("Insert root right side", func(t *testing.T) {
-		SUT := Singleton[int, int](1, 1)
-		SUT.Insert(2, 2)
+		d := Singleton[int, int](1, 1)
+		d.Insert(2, 2)
+
+		SUT := d.rbt()
 
 		asserts.Equal(BLACK, SUT.root.color)
 		asserts.Equal(RED, SUT.root.right.color)
 	})
 
 	t.Run("Insert into existing entry", func(t *testing.T) {
-		SUT := Singleton(10, 233)
-		SUT.Insert(10, 100)
+		d := Singleton(10, 233)
+		d.Insert(10, 100)
 
-		asserts.Equal(&Dict[int, int]{root: &node[int, int]{
+		SUT := d.rbt()
+
+		asserts.Equal(&dict[int, int]{root: &node[int, int]{
 			key:    10,
 			value:  100,
 			color:  BLACK,
@@ -66,9 +73,11 @@ func TestInsert(t *testing.T) {
 	})
 
 	t.Run("LL Single right rotation", func(t *testing.T) {
-		SUT := Singleton(50, 1)
-		SUT.Insert(40, 2)
-		SUT.Insert(30, 3)
+		d := Singleton(50, 1)
+		d.Insert(40, 2)
+		d.Insert(30, 3)
+
+		SUT := d.rbt()
 
 		asserts.Equal(40, SUT.root.key)
 		asserts.Equal(BLACK, SUT.root.color)
@@ -79,9 +88,11 @@ func TestInsert(t *testing.T) {
 	})
 
 	t.Run("RR Single right rotation", func(t *testing.T) {
-		SUT := Singleton(50, 1)
-		SUT.Insert(60, 2)
-		SUT.Insert(70, 3)
+		d := Singleton(50, 1)
+		d.Insert(60, 2)
+		d.Insert(70, 3)
+
+		SUT := d.rbt()
 
 		asserts.Equal(60, SUT.root.key)
 		asserts.Equal(BLACK, SUT.root.color)
@@ -92,11 +103,13 @@ func TestInsert(t *testing.T) {
 	})
 
 	t.Run("LR double red, red uncle", func(t *testing.T) {
-		SUT := Singleton(50, 1)
+		d := Singleton(50, 1)
 		// Left
-		SUT.Insert(40, 2)
-		SUT.Insert(60, 3)
-		SUT.Insert(45, 4)
+		d.Insert(40, 2)
+		d.Insert(60, 3)
+		d.Insert(45, 4)
+
+		SUT := d.rbt()
 
 		asserts.Equal(BLACK, SUT.root.color)
 		asserts.Equal(BLACK, SUT.root.left.color)
@@ -105,10 +118,12 @@ func TestInsert(t *testing.T) {
 	})
 
 	t.Run("LR double red, black uncle", func(t *testing.T) {
-		SUT := Singleton(50, 1)
+		d := Singleton(50, 1)
 		// Left
-		SUT.Insert(40, 2)
-		SUT.Insert(45, 3)
+		d.Insert(40, 2)
+		d.Insert(45, 3)
+
+		SUT := d.rbt()
 
 		asserts.Equal(BLACK, SUT.root.color)
 		asserts.Equal(45, SUT.root.key)
@@ -119,10 +134,12 @@ func TestInsert(t *testing.T) {
 	})
 
 	t.Run("RL double red, red uncle", func(t *testing.T) {
-		SUT := Singleton(50, 1)
-		SUT.Insert(60, 2)
-		SUT.Insert(40, 3)
-		SUT.Insert(55, 4)
+		d := Singleton(50, 1)
+		d.Insert(60, 2)
+		d.Insert(40, 3)
+		d.Insert(55, 4)
+
+		SUT := d.rbt()
 
 		asserts.Equal(BLACK, SUT.root.color)
 		asserts.Equal(BLACK, SUT.root.left.color)
@@ -130,9 +147,11 @@ func TestInsert(t *testing.T) {
 		asserts.Equal(RED, SUT.root.right.left.color)
 	})
 	t.Run("RL double red, black uncle", func(t *testing.T) {
-		SUT := Singleton(50, 1)
-		SUT.Insert(60, 2)
-		SUT.Insert(55, 4)
+		d := Singleton(50, 1)
+		d.Insert(60, 2)
+		d.Insert(55, 4)
+
+		SUT := d.rbt()
 
 		asserts.Equal(BLACK, SUT.root.color)
 		asserts.Equal(55, SUT.root.key)
@@ -143,11 +162,13 @@ func TestInsert(t *testing.T) {
 	})
 
 	t.Run("test the following inserts 7,5,10,20,15", func(t *testing.T) {
-		SUT := Singleton(7, 1)
-		SUT.Insert(5, 2)
-		SUT.Insert(10, 3)
-		SUT.Insert(20, 3)
-		SUT.Insert(15, 3)
+		d := Singleton(7, 1)
+		d.Insert(5, 2)
+		d.Insert(10, 3)
+		d.Insert(20, 3)
+		d.Insert(15, 3)
+
+		SUT := d.rbt()
 
 		asserts.Equal(BLACK, SUT.root.color)
 		asserts.Equal(7, SUT.root.key)
@@ -161,11 +182,13 @@ func TestInsert(t *testing.T) {
 	})
 
 	t.Run("test the following inserts 10,15,5,0,2", func(t *testing.T) {
-		SUT := Singleton(10, 1)
-		SUT.Insert(15, 2)
-		SUT.Insert(5, 3)
-		SUT.Insert(0, 3)
-		SUT.Insert(2, 3)
+		d := Singleton(10, 1)
+		d.Insert(15, 2)
+		d.Insert(5, 3)
+		d.Insert(0, 3)
+		d.Insert(2, 3)
+
+		SUT := d.rbt()
 
 		asserts.Equal(BLACK, SUT.root.color)
 		asserts.Equal(10, SUT.root.key)
@@ -181,7 +204,7 @@ func TestInsert(t *testing.T) {
 
 func TestGet(t *testing.T) {
 	asserts := assert.New(t)
-	t.Run("Get existing entry", func(t *testing.T) {
+	t.Run("Get existing node", func(t *testing.T) {
 		d := Singleton(10, 23)
 		SUT := d.Get(10)
 
@@ -201,17 +224,21 @@ func TestRemove(t *testing.T) {
 	asserts := assert.New(t)
 
 	t.Run("Removes root node with no children", func(t *testing.T) {
-		SUT := Singleton(50, 1)
-		SUT.Remove(50)
+		d := Singleton(50, 1)
+		d.Remove(50)
+
+		SUT := d.rbt()
 
 		asserts.Nil(SUT.root)
 	})
 
 	t.Run("Removes root node with 2 red children", func(t *testing.T) {
-		SUT := Singleton(50, 1)
-		SUT.Insert(60, 2)
-		SUT.Insert(40, 3)
-		SUT.Remove(50)
+		d := Singleton(50, 1)
+		d.Insert(60, 2)
+		d.Insert(40, 3)
+		d.Remove(50)
+
+		SUT := d.rbt()
 
 		asserts.Equal(60, SUT.root.key)
 		asserts.Nil(SUT.root.right)
@@ -219,28 +246,34 @@ func TestRemove(t *testing.T) {
 	})
 
 	t.Run("Removes red right leaf node with no children", func(t *testing.T) {
-		SUT := Singleton(50, 1)
-		SUT.Insert(40, 2)
-		SUT.Insert(60, 3)
-		SUT.Remove(60)
+		d := Singleton(50, 1)
+		d.Insert(40, 2)
+		d.Insert(60, 3)
+		d.Remove(60)
+
+		SUT := d.rbt()
 
 		asserts.Nil(SUT.root.right)
 	})
 
 	t.Run("Removes a red left node with no children", func(t *testing.T) {
-		SUT := Singleton(50, 1)
-		SUT.Insert(40, 2)
-		SUT.Insert(60, 3)
-		SUT.Remove(40)
+		d := Singleton(50, 1)
+		d.Insert(40, 2)
+		d.Insert(60, 3)
+		d.Remove(40)
+
+		SUT := d.rbt()
 
 		asserts.Nil(SUT.root.left)
 	})
 
 	t.Run("Removes a black leaf node with 1 child | Left", func(t *testing.T) {
-		SUT := Singleton(50, 1)
-		SUT.Insert(40, 2)
-		SUT.Insert(60, 3)
-		SUT.Insert(45, 4)
+		d := Singleton(50, 1)
+		d.Insert(40, 2)
+		d.Insert(60, 3)
+		d.Insert(45, 4)
+
+		SUT := d.rbt()
 
 		SUT.Remove(40)
 
@@ -252,10 +285,12 @@ func TestRemove(t *testing.T) {
 	})
 
 	t.Run("Removes a black leaf node with 1 child | Right", func(t *testing.T) {
-		SUT := Singleton(50, 1)
-		SUT.Insert(40, 2)
-		SUT.Insert(60, 3)
-		SUT.Insert(55, 4)
+		d := Singleton(50, 1)
+		d.Insert(40, 2)
+		d.Insert(60, 3)
+		d.Insert(55, 4)
+
+		SUT := d.rbt()
 
 		SUT.Remove(60)
 
@@ -267,11 +302,13 @@ func TestRemove(t *testing.T) {
 	})
 
 	t.Run("Removes a black leaf node with no children | p = RED | s = BLACK with no children", func(t *testing.T) {
-		SUT := Singleton(10, 1)
-		SUT.Insert(5, 2)
-		SUT.Insert(20, 3)
-		SUT.Insert(15, 4)
-		SUT.Insert(30, 5)
+		d := Singleton(10, 1)
+		d.Insert(5, 2)
+		d.Insert(20, 3)
+		d.Insert(15, 4)
+		d.Insert(30, 5)
+
+		SUT := d.rbt()
 
 		// Mutate tree to for testing
 		SUT.root.right.color = RED
@@ -287,13 +324,15 @@ func TestRemove(t *testing.T) {
 	})
 
 	t.Run("Removes a black leaf node with no children | p = BLACK | s = BLACK with no children", func(t *testing.T) {
-		SUT := Singleton(10, 1)
-		SUT.Insert(5, 2)
-		SUT.Insert(20, 3)
-		SUT.Insert(1, 2)
-		SUT.Insert(7, 2)
-		SUT.Insert(15, 4)
-		SUT.Insert(30, 5)
+		d := Singleton(10, 1)
+		d.Insert(5, 2)
+		d.Insert(20, 3)
+		d.Insert(1, 2)
+		d.Insert(7, 2)
+		d.Insert(15, 4)
+		d.Insert(30, 5)
+
+		SUT := d.rbt()
 
 		// Manually balance for testing scenario
 		// RIGHT
@@ -315,13 +354,15 @@ func TestRemove(t *testing.T) {
 	})
 
 	t.Run("Removes a black leaf node with no children | p = BLACK | s = RED | right branch", func(t *testing.T) {
-		SUT := Singleton(10, 1)
-		SUT.Insert(5, 2)
-		SUT.Insert(20, 3)
-		SUT.Insert(1, 2)
-		SUT.Insert(7, 2)
-		SUT.Insert(15, 4)
-		SUT.Insert(30, 5)
+		d := Singleton(10, 1)
+		d.Insert(5, 2)
+		d.Insert(20, 3)
+		d.Insert(1, 2)
+		d.Insert(7, 2)
+		d.Insert(15, 4)
+		d.Insert(30, 5)
+
+		SUT := d.rbt()
 
 		// Mutate tree
 		// RIGHT
@@ -351,13 +392,15 @@ func TestRemove(t *testing.T) {
 	})
 
 	t.Run("Removes a black leaf node with no children | p = BLACK | s = RED | left branch", func(t *testing.T) {
-		SUT := Singleton(50, 1)
-		SUT.Insert(40, 2)
-		SUT.Insert(60, 3)
-		SUT.Insert(70, 2)
-		SUT.Insert(55, 2)
-		SUT.Insert(45, 4)
-		SUT.Insert(35, 5)
+		d := Singleton(50, 1)
+		d.Insert(40, 2)
+		d.Insert(60, 3)
+		d.Insert(70, 2)
+		d.Insert(55, 2)
+		d.Insert(45, 4)
+		d.Insert(35, 5)
+
+		SUT := d.rbt()
 
 		// Mutate tree
 		// LEFT
@@ -388,13 +431,15 @@ func TestRemove(t *testing.T) {
 
 	t.Run("DB | s = BLACK with red and black child | Left subtree", func(t *testing.T) {
 		// From example https://www.youtube.com/watch?v=4KDovab_OS8&list=PLmp4WtRF6yg0_07IUb2eOsS0k1jIa2IgP&index=5&t=1819s
-		SUT := Singleton(10, 1)
-		SUT.Insert(5, 2)
-		SUT.Insert(30, 3)
-		SUT.Insert(25, 2)
-		SUT.Insert(40, 2)
-		SUT.Insert(7, 4)
-		SUT.Insert(1, 5)
+		d := Singleton(10, 1)
+		d.Insert(5, 2)
+		d.Insert(30, 3)
+		d.Insert(25, 2)
+		d.Insert(40, 2)
+		d.Insert(7, 4)
+		d.Insert(1, 5)
+
+		SUT := d.rbt()
 
 		// Mutate tree for example
 		// LEFT
@@ -422,13 +467,15 @@ func TestRemove(t *testing.T) {
 	})
 
 	t.Run("DB | s = BLACK with red and black child | Right subtree", func(t *testing.T) {
-		SUT := Singleton(50, 1)
-		SUT.Insert(60, 2)
-		SUT.Insert(40, 3)
-		SUT.Insert(45, 2)
-		SUT.Insert(30, 2)
-		SUT.Insert(55, 4)
-		SUT.Insert(70, 5)
+		d := Singleton(50, 1)
+		d.Insert(60, 2)
+		d.Insert(40, 3)
+		d.Insert(45, 2)
+		d.Insert(30, 2)
+		d.Insert(55, 4)
+		d.Insert(70, 5)
+
+		SUT := d.rbt()
 
 		// Mutate tree for testing
 		// LEFT
@@ -461,13 +508,15 @@ func TestRemove(t *testing.T) {
 	})
 
 	t.Run("DB | s = BLACK with red and black child | Right subtree", func(t *testing.T) {
-		SUT := Singleton(50, 1)
-		SUT.Insert(60, 2)
-		SUT.Insert(40, 3)
-		SUT.Insert(45, 2)
-		SUT.Insert(30, 2)
-		SUT.Insert(55, 4)
-		SUT.Insert(70, 5)
+		d := Singleton(50, 1)
+		d.Insert(60, 2)
+		d.Insert(40, 3)
+		d.Insert(45, 2)
+		d.Insert(30, 2)
+		d.Insert(55, 4)
+		d.Insert(70, 5)
+
+		SUT := d.rbt()
 
 		// Mutate tree for testing
 		// LEFT
@@ -501,13 +550,15 @@ func TestRemove(t *testing.T) {
 
 	t.Run("Solve rbt | remove 50,20,100,90,40,60,70,10,30,80", func(t *testing.T) {
 		// https://www.youtube.com/watch?v=PgO_Xj7DC1A&t=16s
-		SUT := Singleton(40, 1)
-		SUT.Insert(20, 2)
-		SUT.Insert(60, 3)
-		SUT.Insert(10, 2)
-		SUT.Insert(30, 2)
-		SUT.Insert(50, 4)
-		SUT.Insert(80, 5)
+		d := Singleton(40, 1)
+		d.Insert(20, 2)
+		d.Insert(60, 3)
+		d.Insert(10, 2)
+		d.Insert(30, 2)
+		d.Insert(50, 4)
+		d.Insert(80, 5)
+
+		SUT := d.rbt()
 
 		// Mutate tree for testing
 		// LEFT
