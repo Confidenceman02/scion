@@ -29,15 +29,18 @@ The rules are as follows for Red-Black trees:
  4. Every simple path from a node to a descendant leaf contains the same number of black nodes.
 */
 type Dict[K cmp.Ordered, V any] interface {
-	rbt() *dict[K, V]
+	rbt() dict[K, V]
 
 	// Operations
-	Insert(k K, v V)
+	Insert(k K, v V) Dict[K, V]
 	Get(k K) maybe.Maybe[V]
-	Remove(k K)
+	Remove(k K) Dict[K, V]
 }
 
-func (d *dict[K, V]) rbt() *dict[K, V] {
+/*
+Retrieve the internal Red-Black trie
+*/
+func (d dict[K, V]) rbt() dict[K, V] {
 	return d
 }
 
@@ -56,12 +59,12 @@ type node[K cmp.Ordered, V any] struct {
 
 // Builders
 func Empty[K cmp.Ordered, V any]() Dict[K, V] {
-	return &dict[K, V]{root: nil}
+	return dict[K, V]{root: nil}
 }
 
 func Singleton[K cmp.Ordered, V any](key K, value V) Dict[K, V] {
 	// Root nodes are always black
-	return &dict[K, V]{
+	return dict[K, V]{
 		root: &node[K, V]{
 			key:    key,
 			value:  value,
@@ -73,7 +76,7 @@ func Singleton[K cmp.Ordered, V any](key K, value V) Dict[K, V] {
 }
 
 // Methods
-func (d *dict[K, V]) Get(targetKey K) maybe.Maybe[V] {
+func (d dict[K, V]) Get(targetKey K) maybe.Maybe[V] {
 	if d.root == nil {
 		return maybe.Nothing{}
 	} else {
@@ -152,8 +155,10 @@ Case 4 - Parent is red and uncle is Black
         RL.2 Apply RR
 */
 
-func (d *dict[K, V]) Insert(key K, v V) {
-	balance(d, insertHelp(key, v, d, d.root))
+func (d dict[K, V]) Insert(key K, v V) Dict[K, V] {
+	pt := &d
+	balance(pt, insertHelp(key, v, pt, pt.root))
+	return *pt
 }
 
 func insertHelp[K cmp.Ordered, V any](key K, value V, d *dict[K, V], n *node[K, V]) *node[K, V] {
@@ -221,14 +226,16 @@ Case 6 - DB sibling is black and far nephew is red
     6.4 Remove DB node to single black
 */
 
-func (d *dict[K, V]) Remove(key K) {
+func (d dict[K, V]) Remove(key K) Dict[K, V] {
+	pt := &d
 	if d.root == nil {
 		// Empty tree
-		return
+		return d
 	} else {
 		// Find node to delete
 		dn := d.getNode(key)
-		removeHelp(d, dn)
+		removeHelp(pt, dn)
+		return *pt
 	}
 }
 
