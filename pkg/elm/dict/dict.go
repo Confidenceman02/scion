@@ -122,6 +122,36 @@ func getNodeHelp[K cmp.Ordered, V any](targetKey K, n *node[K, V]) *node[K, V] {
 	return nil
 }
 
+/*
+Insert with BST insertion
+
+- New nodes inserted are always red
+
+Case 1 - Node is root
+    1.1 Color node Black and exit
+
+Case 2 - Black parent
+    2.1 Exit
+
+Case 3 - Parent is red and uncle is red
+    3.1 Push down blackness from grandparent
+    3.2 Find new condition for grandparent
+
+Case 4 - Parent is red and uncle is Black
+    LL
+        ll.1 Rotate grandparent right
+        ll.2 Swap colors of grandparent and parent
+    LR
+        LR.1 Left rotation of parent
+        LR.2 Apply LL
+    RR
+        RR.1 Rotate grandparent left
+        RR.2 Swap colors of grandparent and parent
+    RL
+        RL.1 Right rotation of parent
+        RL.2 Apply RR
+*/
+
 func (d *dict[K, V]) Insert(key K, v V) {
 	balance(d, insertHelp(key, v, d, d.root))
 }
